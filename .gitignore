@@ -1,0 +1,49 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# --- Environnements virtuels ---
+.venv/
+venv/
+env/
+ENV/
+
+# --- Secrets et configuration locale (SEC-09 : jamais de .env versionné) ---
+.env
+.env.*
+!.env.example
+
+# --- Django & SQLite (y compris fichiers WAL/SHM/journal) ---
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+*.sqlite3-journal
+db.sqlite3*
+staticfiles/
+media/
+*.log
+local_settings.py
+
+# --- Système et éditeurs ---
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- Documents internes de travail (non publiés sur le dépôt public) ---
+CDC.md
+Test Technique.md

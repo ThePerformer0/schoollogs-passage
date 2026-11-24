@@ -1,0 +1,7 @@
+# Socle web Django 5.2 LTS (supporté jusqu'en avril 2028, Python 3.10-3.14)
+# Installe automatiquement tzdata sur Windows pour le fuseau Africa/Douala.
+Django==5.2.19
+# Hachage des mots de passe par Argon2id (exigences AUT-02 et SEC-01)
+argon2-cffi==25.1.0
+# Chargement explicite des variables d'environnement depuis .env (exigence SEC-09)
+python-dotenv==1.2.4
