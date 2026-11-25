@@ -36,7 +36,7 @@ schoollogs-passage/
 │   ├── models/              # Modèles ORM (7 modules) et contraintes d'intégrité BD
 │   ├── migrations/          # Migrations SQL reproductibles
 │   ├── repositories/        # Requêtes ORM cloisonnées (parent et établissement)
-│   ├── services/            # Logique métier (authentification, audit ; à venir : badges, synchro, anomalies, IA)
+│   ├── services/            # Logique métier (auth, audit, badges rotatifs, horloge, synchro ; à venir : anomalies, IA)
 │   ├── forms/ & views/      # Validation serveur, contrôle des rôles, vues HTML/JSON
 │   ├── admin.py             # Interface « Gestion des fiches » réservée au Responsable et cloisonnée
 │   ├── templates/ & static/ # Interface sobre alignée SchoolLogs (CSS/JS natifs)
@@ -92,7 +92,7 @@ Les seuils, durées et plafonds sont configurables via [.env.example](.env.examp
 
 ### Contexte sécurisé du navigateur (caméra et PWA)
 
-Les API navigateur **caméra** et **Service Worker** nécessitent HTTPS ou `http://localhost`. En démonstration locale, l'écran de scan tourne sur `http://localhost:8000` (PC) ; l'affichage d'un badge sur téléphone via le réseau local fonctionne, mais son exécution hors ligne sur téléphone exige HTTPS (hors périmètre local).
+Les API navigateur **caméra** et **Service Worker** nécessitent HTTPS ou `http://localhost`. En démonstration locale, l'écran de scan tourne sur `http://localhost:8000` (PC, avec Service Worker et caméra actifs). L'activation et l'affichage de « Mon badge » sur un téléphone connecté au même Wi-Fi fonctionnent via `python manage.py runserver 0.0.0.0:8000` (en ajoutant l'adresse IP locale du PC dans `ALLOWED_HOSTS` et `CSRF_TRUSTED_ORIGINS` du `.env`) ; la réouverture de « Mon badge » hors ligne sur téléphone exige toutefois HTTPS (hors périmètre local).
 
 ---
 
@@ -102,7 +102,7 @@ Créés de façon reproductible par `python manage.py seed_demo` (mots de passe 
 
 | Rôle | Identifiant | Mot de passe | Accès |
 |---|---|---|---|
-| **Responsable** | `responsable` | `DemoResp!2026` | `/responsable/`, `/responsable/audit/`, `/admin/` |
+| **Responsable** | `responsable` | `DemoResp!2026` | `/responsable/`, `/responsable/badges/`, `/responsable/audit/`, `/admin/` |
 | **Agent de portail** | `agent` | `DemoAgent!2026` | `/scan/` uniquement |
 | **Parent 1** (2 enfants : Amina, Samuel) | `parent1` | `DemoParent1!2026` | `/parent/` |
 | **Parent 2** (3 enfants : Clarisse, Junior, Diane) | `parent2` | `DemoParent2!2026` | `/parent/` |
@@ -116,7 +116,12 @@ python manage.py check
 python manage.py test --verbosity=2
 ```
 
-La suite comprend actuellement **69 tests** (7 tests de socle + 62 tests boîte noire critiques sur l'authentification, le blocage temporaire, l'expiration de session, le cloisonnement parent et multi-établissements, le CSRF, l'anti-XSS, les contraintes BD et le peuplement). Elle est exécutée automatiquement à chaque envoi via [.github/workflows/ci.yml](.github/workflows/ci.yml) avec `DEBUG=0` et contrôle d'absence de fichier `.env` versionné.
+La suite comprend actuellement **101 tests** :
+- **7 tests de socle** (configuration, WAL SQLite, Argon2id, route de santé).
+- **62 tests boîte noire** sur l'authentification, le blocage temporaire, l'expiration de session, le cloisonnement parent et multi-établissements, le CSRF, l'anti-XSS, les contraintes BD et le peuplement.
+- **32 tests boîte noire** sur le cycle de vie des badges, les liens d'activation à usage unique, les codes rotatifs signés HMAC-SHA256, l'anti-rejeu, l'idempotence de synchronisation sur 20 badges, la reprise après interruption et la correction/signalement d'horloge (2 h d'écart et horloge aberrante).
+
+Elle est exécutée automatiquement à chaque envoi via [.github/workflows/ci.yml](.github/workflows/ci.yml) avec `DEBUG=0` et contrôle d'absence de fichier `.env` versionné.
 
 ---
 
@@ -127,11 +132,11 @@ La suite comprend actuellement **69 tests** (7 tests de socle + 62 tests boîte 
 | **Mots de passe** | Hachage Argon2id, longueur minimale 8 caractères, jamais stockés en clair ni dans l'audit. | En place et testé |
 | **Anti-force brute et énumération** | Blocage temporaire par couple `(identifiant, IP)` (5 échecs / 15 min), message d'erreur strictement identique et égalisation du temps de réponse. | En place et testé |
 | **Sessions** | Sessions serveur bornées à 8 h, cookie `HttpOnly` + `SameSite=Lax`, déconnexion en `POST` détruisant la session en base. | En place et testé |
-| **Contrôle des rôles** | Vérification serveur sur chaque vue ; Agent cantonné à `/scan/`, « Gestion des fiches » (`/admin/`) réservée au Responsable. | En place et testé |
+| **Contrôle des rôles** | Vérification serveur sur chaque vue (HTML et API JSON `401`/`403`) ; Agent cantonné à `/scan/`, « Gestion des fiches » (`/admin/`) réservée au Responsable. | En place et testé |
 | **Cloisonnement (anti-IDOR)** | Accès parent filtré à ses propres enfants et accès responsable filtré à son seul établissement ; refus uniforme `403` + trace dans `AuditLog`. | En place et testé |
-| **Validation, CSRF et anti-XSS** | Validation serveur systématique, ORM exclusif, `CsrfViewMiddleware` actif sur toutes les écritures, échappement automatique des gabarits, en-têtes `nosniff` et `X-Frame-Options: DENY`. | En place et testé |
-| **Gestion des secrets** | Aucun secret dans le dépôt ; `.env` ignoré dès le premier commit, garde CI anti-`.env`, `Badge.secret` masqué partout. | En place et testé |
-| **Badges résistants à la copie** | Code QR rotatif signé (30 s), usage unique par pas de temps, secret jamais transmis à l'appareil de scan. | À implémenter (prochaine étape) |
+| **Validation, CSRF et anti-XSS** | Validation serveur systématique, ORM exclusif, `CsrfViewMiddleware` actif sur toutes les écritures (y compris `/api/sync/` et l'activation), échappement automatique des gabarits, en-têtes `nosniff` et `X-Frame-Options: DENY`. | En place et testé |
+| **Gestion des secrets** | Aucun secret dans le dépôt ; `.env` ignoré dès le premier commit, garde CI anti-`.env`, `Badge.secret` masqué partout (livré une seule fois au support lors de l'activation) et jetons d'activation stockés uniquement sous forme de hachage SHA-256. | En place et testé |
+| **Badges résistants à la copie** | Code QR rotatif signé HMAC-SHA256 (`v1.<id_opaque>.<pas>.<sig>`), pas de 30 s, tolérance ±1 pas, usage unique en base sur `(badge, pas)`, secret jamais transmis à l'appareil de scan. *Limite assumée :* une copie présentée dans la même fenêtre avant le vrai scan ne peut pas être distinguée ; la courte durée et l'usage unique limitent cette fenêtre. | En place et testé |
 
 ### Ce qui serait ajouté avec davantage de temps
 - Déploiement **HTTPS/TLS** complet (cookies `Secure`, HSTS) permettant aussi le hors ligne sur téléphone.
@@ -143,8 +148,8 @@ La suite comprend actuellement **69 tests** (7 tests de socle + 62 tests boîte 
 
 ## 7. Mode dégradé
 
-1. **Synthèse du jour sans IA disponible** *(à venir)* : si `CLE_API_IA` est vide, si le service répond en erreur ou hors délai, si la sortie est non conforme après une relance ou si un plafond journalier est atteint, la synthèse est produite automatiquement à partir d'un gabarit déterministe utilisant exactement les chiffres calculés par le code.
-2. **Scan hors ligne au portail** *(à venir)* : la PWA stocke localement les points de contrôle et la file des scans dans le navigateur, affiche uniquement « Scan enregistré » sans affirmer la validité hors ligne, puis synchronise sans perte ni doublon au retour du réseau.
+1. **Scan hors ligne et « Mon badge »** : la PWA unique met en cache les ressources locales (bibliothèques QR `jsQR` et `qrcode.js` embarquées sans CDN), conserve les points de contrôle et la file de scans dans `localStorage` même après fermeture d'onglet ou expiration de session (`401`), affiche uniquement un retour neutre « Scan enregistré », puis synchronise sans perte ni doublon au retour du réseau. Côté support, « Mon badge » génère son QR rotatif localement sans réseau après activation et recalage d'horloge via `/api/time/`.
+2. **Synthèse du jour sans IA disponible** *(à venir)* : si `CLE_API_IA` est vide, si le service répond en erreur ou hors délai, si la sortie est non conforme après une relance ou si un plafond journalier est atteint, la synthèse est produite automatiquement à partir d'un gabarit déterministe utilisant exactement les chiffres calculés par le code.
 
 ---
 
@@ -158,11 +163,11 @@ La suite comprend actuellement **69 tests** (7 tests de socle + 62 tests boîte 
 - Script de peuplement rejouable (`seed_demo`) créant 1 établissement, 4 comptes, 5 élèves, points de contrôle, itinéraires, badges actifs et 3 anomalies de types distincts.
 - Authentification complète (Argon2id, blocage temporaire, message uniforme, expiration de session, déconnexion serveur effective) et journal d'audit minimal.
 - Contrôle strict des rôles côté serveur, cloisonnement parent et multi-établissements, « Gestion des fiches » (`/admin/`) réservée au Responsable, formulaires validés côté serveur.
+- **Badges numériques rotatifs et scan hors ligne** : cycle de vie tracé (`actif`, `suspendu`, `perdu`, `révoqué`), réémission atomique, liens d'activation uniques hachés SHA-256, signatures HMAC-SHA256 sur pas de 30 s avec usage unique en base, anomalie `BADGE_NON_ACTIF` sur badge inactif signé, correction et marquage d'horloge suspecte, synchronisation par lot idempotente protégée CSRF, PWA hors ligne (`/manifest.webmanifest`, `/sw.js`, `/scan/`, `/mon-badge/`) avec bibliothèques QR locales sans CDN.
 - Interface sobre mobile-first alignée sur la charte SchoolLogs (CSS/JS natifs sans CDN).
-- **69 tests automatisés au vert** (socle + boîte noire).
+- **101 tests automatisés au vert** (7 socle + 94 boîte noire).
 
 ### Reste à réaliser (périmètre cible)
-- **Badges numériques et scan hors ligne** : cycle de vie complet (réémission, lien d'activation unique), code QR rotatif signé, page « Mon badge », PWA hors ligne (Service Worker + file persistante + caméra QR), synchronisation idempotente et correction/signalement d'horloge.
 - **Détection des anomalies et planificateur** : détection automatique des 5 types (`POINT_MANQUANT`, `HORS_FENETRE`, `POINT_INCONNU`, `DOUBLE_SCAN`, `BADGE_NON_ACTIF`), commande planifiée en boucle idempotente et résolution automatique sur synchronisation tardive.
 - **Notifications et synthèse IA** : table de messages sortants derrière une interface fournisseur isolée avec plafond journalier ; synthèse du jour par gabarit puis modèle IA avec les 4 garde-fous et test de fidélité numérique.
 - **Finalisation** : banc de démonstration (`DEMO_MODE`), recette complète des scénarios et production des deux vidéos (démonstration technique et capsule de communication).
