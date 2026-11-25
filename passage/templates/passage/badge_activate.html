@@ -1,0 +1,29 @@
+{% extends "passage/base.html" %}
+{% block title %}Activation du badge · SchoolLogs Passage{% endblock %}
+{% block main_class %}login{% endblock %}
+{% block content %}
+<div class="login-brand">
+    <span class="brand-mark brand-mark-lg" aria-hidden="true">SL</span>
+    <div>
+        <h1>Mon badge</h1>
+        <p>Activation unique du support</p>
+    </div>
+</div>
+
+<section class="card">
+    {% if error_message %}
+        <p class="alert alert-error" role="alert">{{ error_message }}</p>
+    {% elif activated %}
+        <p class="alert alert-info" role="status">Badge activé sur cet appareil.</p>
+        <p class="subtitle">Vous pouvez maintenant ouvrir la page Mon badge.</p>
+        <a class="btn btn-lg" href="{% url 'passage:my_badge' %}">Ouvrir Mon badge</a>
+    {% elif link_valid %}
+        <h2>Activer ce support</h2>
+        <p class="subtitle">Ce lien est à usage unique et expire le {{ expires_at|date:"d/m/Y H:i" }}.</p>
+        <form method="post">
+            {% csrf_token %}
+            <button class="btn btn-lg" type="submit">Activer mon badge</button>
+        </form>
+    {% endif %}
+</section>
+{% endblock %}

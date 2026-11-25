@@ -6,7 +6,7 @@ from functools import wraps
 from typing import Callable
 
 from django.conf import settings
-from django.http import HttpRequest, HttpResponse, HttpResponseForbidden
+from django.http import HttpRequest, HttpResponse, HttpResponseForbidden, JsonResponse
 from django.shortcuts import redirect
 from django.utils.http import urlencode
 
@@ -51,6 +51,43 @@ def role_required(*allowed_roles: str) -> Callable:
                     target_type="route",
                     target_id=request.path,
                     details=f"Rôle non autorisé ({request.user.role}).",
+                )
+
+            return view_func(request, *args, **kwargs)
+
+        return wrapped
+
+    return decorator
+
+
+def api_role_required(*allowed_roles: str) -> Callable:
+    """Enforce JSON authentication (401) and strict role membership (403) on API routes."""
+
+    def decorator(view_func: Callable) -> Callable:
+        @wraps(view_func)
+        def wrapped(request: HttpRequest, *args, **kwargs) -> HttpResponse:
+            if not request.user.is_authenticated:
+                return JsonResponse(
+                    {
+                        "error": "authentication_required",
+                        "detail": "Session expirée ou authentification requise.",
+                    },
+                    status=401,
+                )
+
+            if not request.user.is_active or request.user.role not in allowed_roles:
+                log_audit_event(
+                    action=AuditLog.Action.ACCESS_DENIED,
+                    outcome=AuditLog.Outcome.DENIED,
+                    actor=request.user,
+                    target_type="api",
+                    target_id=request.path,
+                    ip_address=get_client_ip(request),
+                    details=f"Rôle non autorisé sur API ({request.user.role}).",
+                )
+                return JsonResponse(
+                    {"error": "forbidden", "detail": "Accès refusé."},
+                    status=403,
                 )
 
             return view_func(request, *args, **kwargs)

@@ -1,0 +1,117 @@
+{% extends "passage/base.html" %}
+{% block title %}Badges · Responsable{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Gestion des badges</h1>
+        <p class="subtitle">{{ school.name }} · Cycle de vie, réémission et liens d'activation.</p>
+    </div>
+</div>
+
+<section class="section">
+    <h2 class="section-title">Émettre ou réémettre un badge</h2>
+    <div class="table-wrap">
+        {% if students %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Élève</th>
+                    <th>Classe</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in students %}
+                <tr>
+                    <td>{{ student.full_name }}</td>
+                    <td>{{ student.classroom }}</td>
+                    <td>
+                        <form method="post" action="{% url 'passage:manager_badge_issue' student.id %}">
+                            {% csrf_token %}
+                            <button class="btn btn-secondary" type="submit">Émettre / Réémettre</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="empty-state">Aucun élève enregistré.</p>
+        {% endif %}
+    </div>
+</section>
+
+<section class="section">
+    <h2 class="section-title">Badges émis</h2>
+    <div class="table-wrap">
+        {% if badges %}
+        <table class="table-wide">
+            <thead>
+                <tr>
+                    <th>Élève</th>
+                    <th>Identifiant opaque</th>
+                    <th>État</th>
+                    <th>Support</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for badge in badges %}
+                <tr>
+                    <td>{{ badge.student.full_name }}</td>
+                    <td class="mono">{{ badge.public_id }}</td>
+                    <td>
+                        {% if badge.status == 'active' %}
+                            <span class="badge b-ok">Actif</span>
+                        {% elif badge.status == 'suspended' %}
+                            <span class="badge b-warn">Suspendu</span>
+                        {% elif badge.status == 'lost' %}
+                            <span class="badge b-err">Perdu</span>
+                        {% else %}
+                            <span class="badge b-neu">Révoqué</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if badge.is_device_activated %}
+                            <span class="badge b-info">Activé</span>
+                        {% else %}
+                            <span class="badge b-neu">Non activé</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="badge-group">
+                            {% if badge.status == 'active' %}
+                            <form method="post" action="{% url 'passage:manager_badge_activation_link' badge.id %}">
+                                {% csrf_token %}
+                                <button class="btn btn-secondary" type="submit">Lien d'activation</button>
+                            </form>
+                            {% endif %}
+                            {% if badge.status == 'active' or badge.status == 'suspended' %}
+                            <form method="post" action="{% url 'passage:manager_badge_change_status' badge.id %}">
+                                {% csrf_token %}
+                                <select name="status" class="select" aria-label="Nouvel état">
+                                    {% if badge.status == 'suspended' %}
+                                    <option value="active">Actif</option>
+                                    {% else %}
+                                    <option value="suspended">Suspendu</option>
+                                    {% endif %}
+                                    <option value="lost">Perdu</option>
+                                    <option value="revoked">Révoqué</option>
+                                </select>
+                                <button class="btn btn-secondary" type="submit">Appliquer</button>
+                            </form>
+                            {% else %}
+                            <span class="subtitle">Définitif</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="empty-state">Aucun badge émis.</p>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

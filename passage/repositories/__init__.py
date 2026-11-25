@@ -5,6 +5,12 @@ from passage.repositories.auth_repo import (
     get_recent_failures_since_last_success,
     record_login_attempt,
 )
+from passage.repositories.badge_repo import (
+    get_badge_by_public_id,
+    get_badge_for_manager,
+    get_passage_by_device_event,
+    list_badges_for_school,
+)
 from passage.repositories.school_repo import (
     get_anomaly_for_manager,
     get_checkpoint_for_manager,
@@ -25,13 +31,17 @@ from passage.repositories.school_repo import (
 __all__ = [
     "clear_or_supersede_note",
     "get_anomaly_for_manager",
+    "get_badge_by_public_id",
+    "get_badge_for_manager",
     "get_checkpoint_for_manager",
+    "get_passage_by_device_event",
     "get_recent_failures_since_last_success",
     "get_student_for_manager",
     "get_student_for_parent",
     "list_anomalies_for_school",
     "list_anomalies_for_student",
     "list_audit_logs_for_school",
+    "list_badges_for_school",
     "list_checkpoints_for_school",
     "list_outgoing_messages_for_school",
     "list_passages_for_school",
