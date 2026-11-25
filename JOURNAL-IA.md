@@ -64,3 +64,7 @@ Ce journal recense, jour par jour, les outils d'IA utilisés sur ce projet, ce q
    - *Situation* : les tests boîte noire sur une horloge aberrante ont révélé qu'un décalage nul pouvait masquer l'indicateur « horloge suspecte » lorsqu'une heure locale aberrante retombait sur l'heure serveur ; par ailleurs, la première interface des actions de badge empilait une liste déroulante pleine largeur et un bouton « Appliquer » peu lisible.
    - *Correction et raison* : **corrigé**. Le service `clock.py` marque désormais aussi les heures non plausibles comme horloge suspecte, et le tableau « Badges émis » a été remplacé par une barre d'actions compacte à icônes SVG inline avec légende. J'ai également refusé l'ajout non demandé d'un bandeau de consigne supplémentaire sur la page d'activation.
 
+
+### Suite du 25 novembre 2026 : Détection des anomalies et planificateur autonome
+- **Antigravity (Gemini)** : service `anomalies.py` (5 types d'anomalies, résolution tardive automatique, traitement responsable), commande `run_scheduler`, branchement dans `sync.py`, bouton « Traiter » et affichage de l'itinéraire sur la fiche élève.
+- **Claude (conversation dédiée n° 1)** : écriture des 29 tests boîte noire (`passage/tests/test_lot3_blackbox.py`), passés du premier coup (130 tests au total).

@@ -79,7 +79,7 @@ python manage.py seed_demo
 python manage.py runserver
 ```
 
-Ouvrir ensuite **http://localhost:8000**. La commande `python manage.py seed_demo` est rejouable : l'exécuter plusieurs fois ne crée aucun doublon.
+Ouvrir ensuite **http://localhost:8000**. Dans un second terminal (avec le même environnement virtuel), lancer le planificateur autonome : `python manage.py run_scheduler` (ou `python manage.py run_scheduler --once` pour un seul cycle). La commande `python manage.py seed_demo` est rejouable : l'exécuter plusieurs fois ne crée aucun doublon.
 
 ### Configuration (`.env`)
 
@@ -116,10 +116,11 @@ python manage.py check
 python manage.py test --verbosity=2
 ```
 
-La suite comprend actuellement **101 tests** :
+La suite comprend actuellement **130 tests** :
 - **7 tests de socle** (configuration, WAL SQLite, Argon2id, route de santé).
 - **62 tests boîte noire** sur l'authentification, le blocage temporaire, l'expiration de session, le cloisonnement parent et multi-établissements, le CSRF, l'anti-XSS, les contraintes BD et le peuplement.
 - **32 tests boîte noire** sur le cycle de vie des badges, les liens d'activation à usage unique, les codes rotatifs signés HMAC-SHA256, l'anti-rejeu, l'idempotence de synchronisation sur 20 badges, la reprise après interruption et la correction/signalement d'horloge (2 h d'écart et horloge aberrante).
+- **29 tests boîte noire** sur la détection automatique des 5 anomalies, le planificateur autonome idempotent (`run_scheduler`), la résolution automatique après synchronisation tardive et le traitement responsable cloisonné.
 
 Elle est exécutée automatiquement à chaque envoi via [.github/workflows/ci.yml](.github/workflows/ci.yml) avec `DEBUG=0` et contrôle d'absence de fichier `.env` versionné.
 
@@ -164,11 +165,11 @@ Elle est exécutée automatiquement à chaque envoi via [.github/workflows/ci.ym
 - Authentification complète (Argon2id, blocage temporaire, message uniforme, expiration de session, déconnexion serveur effective) et journal d'audit minimal.
 - Contrôle strict des rôles côté serveur, cloisonnement parent et multi-établissements, « Gestion des fiches » (`/admin/`) réservée au Responsable, formulaires validés côté serveur.
 - **Badges numériques rotatifs et scan hors ligne** : cycle de vie tracé (`actif`, `suspendu`, `perdu`, `révoqué`), réémission atomique, liens d'activation uniques hachés SHA-256, signatures HMAC-SHA256 sur pas de 30 s avec usage unique en base, anomalie `BADGE_NON_ACTIF` sur badge inactif signé, correction et marquage d'horloge suspecte, synchronisation par lot idempotente protégée CSRF, PWA hors ligne (`/manifest.webmanifest`, `/sw.js`, `/scan/`, `/mon-badge/`) avec bibliothèques QR locales sans CDN.
+- **Détection des anomalies et planificateur autonome** : détection des 5 types (`POINT_MANQUANT`, `HORS_FENETRE`, `POINT_INCONNU`, `DOUBLE_SCAN`, `BADGE_NON_ACTIF`), commande en boucle idempotente `run_scheduler`, résolution automatique sur synchronisation tardive, traitement responsable et affichage des itinéraires.
 - Interface sobre mobile-first alignée sur la charte SchoolLogs (CSS/JS natifs sans CDN).
-- **101 tests automatisés au vert** (7 socle + 94 boîte noire).
+- **130 tests automatisés au vert** (7 socle + 123 boîte noire).
 
 ### Reste à réaliser (périmètre cible)
-- **Détection des anomalies et planificateur** : détection automatique des 5 types (`POINT_MANQUANT`, `HORS_FENETRE`, `POINT_INCONNU`, `DOUBLE_SCAN`, `BADGE_NON_ACTIF`), commande planifiée en boucle idempotente et résolution automatique sur synchronisation tardive.
 - **Notifications et synthèse IA** : table de messages sortants derrière une interface fournisseur isolée avec plafond journalier ; synthèse du jour par gabarit puis modèle IA avec les 4 garde-fous et test de fidélité numérique.
 - **Finalisation** : banc de démonstration (`DEMO_MODE`), recette complète des scénarios et production des deux vidéos (démonstration technique et capsule de communication).
 
