@@ -1,4 +1,5 @@
 {% extends "passage/base.html" %}
+{% load static %}
 {% block title %}Activation du badge · SchoolLogs Passage{% endblock %}
 {% block main_class %}login{% endblock %}
 {% block content %}
@@ -11,6 +12,7 @@
 </div>
 
 <section class="card">
+    <p id="activate-status" class="alert alert-error" role="alert" hidden></p>
     {% if error_message %}
         <p class="alert alert-error" role="alert">{{ error_message }}</p>
     {% elif activated %}
@@ -20,10 +22,13 @@
     {% elif link_valid %}
         <h2>Activer ce support</h2>
         <p class="subtitle">Ce lien est à usage unique et expire le {{ expires_at|date:"d/m/Y H:i" }}.</p>
-        <form method="post">
+        <form id="activate-badge-form" method="post">
             {% csrf_token %}
-            <button class="btn btn-lg" type="submit">Activer mon badge</button>
+            <button id="activate-badge-btn" class="btn btn-lg" type="submit">Activer mon badge</button>
         </form>
     {% endif %}
 </section>
+{% endblock %}
+{% block scripts %}
+<script src="{% static 'passage/js/badge_activate.js' %}" defer></script>
 {% endblock %}

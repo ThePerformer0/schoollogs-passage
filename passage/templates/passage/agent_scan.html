@@ -1,14 +1,17 @@
 {% extends "passage/base.html" %}
+{% load static %}
 {% block title %}Scan de badges · Agent de portail{% endblock %}
 {% block full_width_top %}
-<div class="netbar" data-net="online" aria-live="polite">
-    <span class="badge b-ok">En ligne</span>
-    <span class="pending">0 scan en attente</span>
-    <button class="btn btn-secondary" type="button" disabled>Synchroniser</button>
+<div id="scanner-netbar" class="netbar" data-net="online" aria-live="polite">
+    <span id="scanner-net-badge" class="badge b-ok">En ligne</span>
+    <span id="scanner-pending-count" class="pending">0 scan en attente</span>
+    <button id="scanner-sync-btn" class="btn btn-secondary" type="button" disabled>Synchroniser</button>
 </div>
 {% endblock %}
 {% block main_class %}scan{% endblock %}
 {% block content %}
+<div id="scanner-session-alert" class="alert alert-error" role="alert" hidden></div>
+
 <div class="field">
     <label for="checkpoint-select">Point de contrôle ({{ school.name }})</label>
     <select id="checkpoint-select" class="select select-lg" name="checkpoint_id">
@@ -19,11 +22,34 @@
 </div>
 
 <div class="camera" aria-label="Zone de lecture QR code">
-    <p>Caméra QR et file hors ligne activées au lot suivant.</p>
+    <video id="scanner-video" muted playsinline hidden></video>
+    <canvas id="scanner-canvas" hidden></canvas>
+    <p id="scanner-camera-status">Appuyez sur Activer la caméra pour scanner un badge.</p>
 </div>
+
+<button id="scanner-camera-toggle" class="btn btn-lg" type="button">Activer la caméra</button>
+
+<div id="scanner-feedback" class="scan-result" role="status" hidden>Scan enregistré</div>
 
 <details class="card">
     <summary><strong>Saisie manuelle de secours</strong></summary>
-    <p class="subtitle">Disponible dès l'activation du lecteur de badges rotatifs.</p>
+    <form id="scanner-manual-form" class="form-stack" style="margin-top: 12px;">
+        <div class="field">
+            <label for="scanner-manual-code">Code du badge</label>
+            <input
+                id="scanner-manual-code"
+                class="input mono"
+                type="text"
+                autocomplete="off"
+                placeholder="v1...."
+                required
+            >
+        </div>
+        <button class="btn btn-secondary btn-lg" type="submit">Enregistrer le scan</button>
+    </form>
 </details>
+{% endblock %}
+{% block scripts %}
+<script src="{% static 'passage/vendor/jsQR.js' %}" defer></script>
+<script src="{% static 'passage/js/agent_scan.js' %}" defer></script>
 {% endblock %}

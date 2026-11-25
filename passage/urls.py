@@ -23,6 +23,8 @@ from passage.views import (
     my_badge_view,
     parent_dashboard,
     parent_student_detail,
+    pwa_manifest_view,
+    pwa_service_worker_view,
     server_time_api,
 )
 
@@ -30,6 +32,8 @@ app_name = "passage"
 
 urlpatterns = [
     path("", home_view, name="home"),
+    path("manifest.webmanifest", pwa_manifest_view, name="pwa_manifest"),
+    path("sw.js", pwa_service_worker_view, name="pwa_service_worker"),
     path("connexion/", login_view, name="login"),
     path("deconnexion/", logout_view, name="logout"),
     # Public badge support & time recalibration (students are not authenticated users)

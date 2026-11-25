@@ -17,7 +17,7 @@
                 <tr>
                     <th>Élève</th>
                     <th>Classe</th>
-                    <th>Action</th>
+                    <th class="col-actions">Action</th>
                 </tr>
             </thead>
             <tbody>
@@ -25,11 +25,21 @@
                 <tr>
                     <td>{{ student.full_name }}</td>
                     <td>{{ student.classroom }}</td>
-                    <td>
-                        <form method="post" action="{% url 'passage:manager_badge_issue' student.id %}">
-                            {% csrf_token %}
-                            <button class="btn btn-secondary" type="submit">Émettre / Réémettre</button>
-                        </form>
+                    <td class="col-actions">
+                        <div class="row-actions">
+                            <form method="post" action="{% url 'passage:manager_badge_issue' student.id %}">
+                                {% csrf_token %}
+                                <button class="btn-chip btn-chip-brand" type="submit" title="Émettre un nouveau badge (révoque l'ancien si actif)">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                                        <path d="M3 3v5h5"/>
+                                        <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+                                        <path d="M16 16h5v5"/>
+                                    </svg>
+                                    <span>Émettre / Réémettre</span>
+                                </button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}
@@ -42,17 +52,46 @@
 </section>
 
 <section class="section">
-    <h2 class="section-title">Badges émis</h2>
+    <div class="section-head">
+        <h2 class="section-title">Badges émis</h2>
+        {% if badges %}
+        <div class="action-legend" aria-hidden="true">
+            <span class="action-legend-item action-legend-warn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="9"/>
+                    <line x1="10" y1="9" x2="10" y2="15"/>
+                    <line x1="14" y1="9" x2="14" y2="15"/>
+                </svg>
+                Suspendre
+            </span>
+            <span class="action-legend-item action-legend-err">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                Perdu
+            </span>
+            <span class="action-legend-item action-legend-neu">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="9"/>
+                    <line x1="5.6" y1="5.6" x2="18.4" y2="18.4"/>
+                </svg>
+                Révoquer
+            </span>
+        </div>
+        {% endif %}
+    </div>
     <div class="table-wrap">
         {% if badges %}
         <table class="table-wide">
             <thead>
                 <tr>
                     <th>Élève</th>
-                    <th>Identifiant opaque</th>
+                    <th>Identifiant</th>
                     <th>État</th>
                     <th>Support</th>
-                    <th>Actions</th>
+                    <th class="col-actions">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -78,32 +117,103 @@
                             <span class="badge b-neu">Non activé</span>
                         {% endif %}
                     </td>
-                    <td>
-                        <div class="badge-group">
-                            {% if badge.status == 'active' %}
+                    <td class="col-actions">
+                        {% if badge.status == 'active' %}
+                        <div class="row-actions">
                             <form method="post" action="{% url 'passage:manager_badge_activation_link' badge.id %}">
                                 {% csrf_token %}
-                                <button class="btn btn-secondary" type="submit">Lien d'activation</button>
+                                <button class="btn-chip btn-chip-brand" type="submit" title="Générer un lien d'activation à usage unique" aria-label="Générer un lien d'activation pour {{ badge.student.full_name }}">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <rect x="3" y="3" width="7" height="7" rx="1"/>
+                                        <rect x="14" y="3" width="7" height="7" rx="1"/>
+                                        <rect x="3" y="14" width="7" height="7" rx="1"/>
+                                        <path d="M14 14h3v3h-3z"/>
+                                        <path d="M20 14v3h1"/>
+                                        <path d="M14 20h3"/>
+                                        <path d="M20 20h1"/>
+                                    </svg>
+                                    <span>Lien QR</span>
+                                </button>
                             </form>
-                            {% endif %}
-                            {% if badge.status == 'active' or badge.status == 'suspended' %}
+                            <span class="action-sep" aria-hidden="true"></span>
                             <form method="post" action="{% url 'passage:manager_badge_change_status' badge.id %}">
                                 {% csrf_token %}
-                                <select name="status" class="select" aria-label="Nouvel état">
-                                    {% if badge.status == 'suspended' %}
-                                    <option value="active">Actif</option>
-                                    {% else %}
-                                    <option value="suspended">Suspendu</option>
-                                    {% endif %}
-                                    <option value="lost">Perdu</option>
-                                    <option value="revoked">Révoqué</option>
-                                </select>
-                                <button class="btn btn-secondary" type="submit">Appliquer</button>
+                                <input type="hidden" name="status" value="suspended">
+                                <button class="btn-icon btn-icon-warn" type="submit" title="Suspendre temporairement" aria-label="Suspendre le badge de {{ badge.student.full_name }}">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <circle cx="12" cy="12" r="9"/>
+                                        <line x1="10" y1="9" x2="10" y2="15"/>
+                                        <line x1="14" y1="9" x2="14" y2="15"/>
+                                    </svg>
+                                </button>
                             </form>
-                            {% else %}
-                            <span class="subtitle">Définitif</span>
-                            {% endif %}
+                            <form method="post" action="{% url 'passage:manager_badge_change_status' badge.id %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="status" value="lost">
+                                <button class="btn-icon btn-icon-err" type="submit" title="Déclarer perdu (définitif)" aria-label="Déclarer perdu le badge de {{ badge.student.full_name }}">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                                        <line x1="12" y1="9" x2="12" y2="13"/>
+                                        <line x1="12" y1="17" x2="12.01" y2="17"/>
+                                    </svg>
+                                </button>
+                            </form>
+                            <form method="post" action="{% url 'passage:manager_badge_change_status' badge.id %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="status" value="revoked">
+                                <button class="btn-icon btn-icon-neu" type="submit" title="Révoquer (définitif)" aria-label="Révoquer le badge de {{ badge.student.full_name }}">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <circle cx="12" cy="12" r="9"/>
+                                        <line x1="5.6" y1="5.6" x2="18.4" y2="18.4"/>
+                                    </svg>
+                                </button>
+                            </form>
                         </div>
+                        {% elif badge.status == 'suspended' %}
+                        <div class="row-actions">
+                            <form method="post" action="{% url 'passage:manager_badge_change_status' badge.id %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="status" value="active">
+                                <button class="btn-chip btn-chip-ok" type="submit" title="Réactiver ce badge" aria-label="Réactiver le badge de {{ badge.student.full_name }}">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <circle cx="12" cy="12" r="9"/>
+                                        <polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none"/>
+                                    </svg>
+                                    <span>Réactiver</span>
+                                </button>
+                            </form>
+                            <span class="action-sep" aria-hidden="true"></span>
+                            <form method="post" action="{% url 'passage:manager_badge_change_status' badge.id %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="status" value="lost">
+                                <button class="btn-icon btn-icon-err" type="submit" title="Déclarer perdu (définitif)" aria-label="Déclarer perdu le badge de {{ badge.student.full_name }}">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                                        <line x1="12" y1="9" x2="12" y2="13"/>
+                                        <line x1="12" y1="17" x2="12.01" y2="17"/>
+                                    </svg>
+                                </button>
+                            </form>
+                            <form method="post" action="{% url 'passage:manager_badge_change_status' badge.id %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="status" value="revoked">
+                                <button class="btn-icon btn-icon-neu" type="submit" title="Révoquer (définitif)" aria-label="Révoquer le badge de {{ badge.student.full_name }}">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <circle cx="12" cy="12" r="9"/>
+                                        <line x1="5.6" y1="5.6" x2="18.4" y2="18.4"/>
+                                    </svg>
+                                </button>
+                            </form>
+                        </div>
+                        {% else %}
+                        <span class="action-locked">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <rect x="5" y="11" width="14" height="10" rx="2"/>
+                                <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+                            </svg>
+                            <span>Définitif</span>
+                        </span>
+                        {% endif %}
                     </td>
                 </tr>
                 {% endfor %}

@@ -1,8 +1,31 @@
 {% extends "passage/base.html" %}
+{% load static %}
 {% block title %}Mon badge · SchoolLogs Passage{% endblock %}
 {% block content %}
-<section class="badge-card">
+<section id="my-badge-active" class="badge-card" hidden>
     <h1>Mon badge</h1>
-    <p class="subtitle">Interface PWA hors ligne et QR rotatif activés à l'étape frontend.</p>
+    <div id="my-badge-qr" class="qr" aria-live="off"></div>
+    <div class="timer" aria-hidden="true">
+        <span id="my-badge-timer-bar"></span>
+    </div>
+    <p id="my-badge-timer-label" class="timer-label">Valable encore {{ code_step_seconds }} s</p>
+    <p class="subtitle">Augmentez la luminosité de l'écran avant de présenter le badge au portail.</p>
+    <p id="my-badge-clock-note" class="subtitle"></p>
+    <details style="margin-top: 16px; text-align: left;">
+        <summary><strong>Code texte de secours</strong></summary>
+        <p id="my-badge-code-text" class="mono subtitle" style="word-break: break-all; margin-top: 8px;"></p>
+    </details>
 </section>
+
+<section id="my-badge-empty" class="badge-card">
+    <h1>Mon badge</h1>
+    <p class="subtitle">
+        Aucun badge n'est activé sur cet appareil. Ouvrez le lien d'activation à usage unique fourni par votre établissement.
+    </p>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="{% static 'passage/vendor/qrcode.js' %}" defer></script>
+<script src="{% static 'passage/js/badge_crypto.js' %}" defer></script>
+<script src="{% static 'passage/js/my_badge.js' %}" defer></script>
 {% endblock %}

@@ -25,6 +25,7 @@ from passage.views.manager import (
     manager_student_detail,
 )
 from passage.views.parent import parent_dashboard, parent_student_detail
+from passage.views.pwa import pwa_manifest_view, pwa_service_worker_view
 
 __all__ = [
     "agent_checkpoints_api",
@@ -48,5 +49,7 @@ __all__ = [
     "my_badge_view",
     "parent_dashboard",
     "parent_student_detail",
+    "pwa_manifest_view",
+    "pwa_service_worker_view",
     "server_time_api",
 ]

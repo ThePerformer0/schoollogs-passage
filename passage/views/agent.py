@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_GET
 
 from passage.models import User
@@ -12,6 +13,7 @@ from passage.repositories import school_repo
 
 
 @require_GET
+@ensure_csrf_cookie
 @role_required(User.Role.AGENT)
 def agent_scan_view(request: HttpRequest) -> HttpResponse:
     """Single screen accessible to portal agents (offline PWA scanning added in Lot 2)."""

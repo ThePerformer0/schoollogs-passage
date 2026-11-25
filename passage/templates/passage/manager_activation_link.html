@@ -1,4 +1,5 @@
 {% extends "passage/base.html" %}
+{% load static %}
 {% block title %}Lien d'activation · Responsable{% endblock %}
 {% block content %}
 <a class="back-link" href="{% url 'passage:manager_badge_list' %}">&larr; Retour aux badges</a>
@@ -9,8 +10,19 @@
         Pour {{ badge.student.full_name }} (identifiant opaque <span class="mono">{{ badge.public_id }}</span>).
         Valable jusqu'au {{ expires_at|date:"d/m/Y H:i" }}. Ce lien ne peut être utilisé qu'une seule fois.
     </p>
+    <div
+        id="activation-link-qr"
+        class="qr"
+        data-activation-url="{{ activation_url }}"
+        style="max-width: 240px; margin: 16px auto;"
+    ></div>
     <div class="alert alert-info">
-        <span class="mono">{{ activation_url }}</span>
+        <a class="mono" href="{{ activation_url }}" style="word-break: break-all;">{{ activation_url }}</a>
     </div>
 </section>
+{% endblock %}
+{% block scripts %}
+<script src="{% static 'passage/vendor/qrcode.js' %}" defer></script>
+<script src="{% static 'passage/js/badge_crypto.js' %}" defer></script>
+<script src="{% static 'passage/js/activation_qr.js' %}" defer></script>
 {% endblock %}
