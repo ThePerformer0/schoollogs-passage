@@ -1,0 +1,28 @@
+{% extends "passage/base.html" %}
+{% block title %}{{ student.full_name }} — Responsable{% endblock %}
+{% block content %}
+<h1>{{ student.full_name }}</h1>
+<p>Classe : {{ student.classroom }} — État : {{ student.get_status_display }}</p>
+
+<section>
+    <h2>Passages</h2>
+    <ul>
+        {% for passage in passages %}
+        <li>{{ passage.retained_at }} — {{ passage.checkpoint.label }} — {{ passage.get_status_display }}</li>
+        {% empty %}
+        <li>Aucun passage.</li>
+        {% endfor %}
+    </ul>
+</section>
+
+<section>
+    <h2>Anomalies</h2>
+    <ul>
+        {% for anomaly in anomalies %}
+        <li>{{ anomaly.date }} — {{ anomaly.get_anomaly_type_display }} — {{ anomaly.get_status_display }}</li>
+        {% empty %}
+        <li>Aucune anomalie.</li>
+        {% endfor %}
+    </ul>
+</section>
+{% endblock %}

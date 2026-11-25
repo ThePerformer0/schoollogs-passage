@@ -199,6 +199,10 @@ DATABASES = {
     "default": build_database_config(BASE_DIR),
 }
 
+# --- Custom user model -------------------------------------------------------
+AUTH_USER_MODEL = "passage.User"
+LOGIN_URL = "/connexion/"
+
 # --- Password hashing (Argon2id default — AUT-02 / SEC-01) -------------------
 PASSWORD_HASHERS = [
     "django.contrib.auth.hashers.Argon2PasswordHasher",

@@ -1,0 +1,29 @@
+{% extends "passage/base.html" %}
+{% block title %}Journal d'audit — Responsable{% endblock %}
+{% block content %}
+<h1>Journal d'audit — {{ school.name }}</h1>
+<table>
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Acteur</th>
+            <th>Action</th>
+            <th>Objet</th>
+            <th>Résultat</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for entry in audit_logs %}
+        <tr>
+            <td>{{ entry.occurred_at }}</td>
+            <td>{{ entry.actor_identifier }}</td>
+            <td>{{ entry.get_action_display }}</td>
+            <td>{{ entry.target_type }} {{ entry.target_id }}</td>
+            <td>{{ entry.get_outcome_display }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5">Aucune entrée d'audit.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

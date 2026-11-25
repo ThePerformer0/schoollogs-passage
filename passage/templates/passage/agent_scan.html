@@ -1,0 +1,12 @@
+{% extends "passage/base.html" %}
+{% block title %}Scan de badges — Agent de portail{% endblock %}
+{% block content %}
+<h1>Écran de scan — {{ school.name }}</h1>
+<p>Sélectionnez votre point de contrôle avant de scanner (mode hors ligne livré au Lot 2).</p>
+<label for="checkpoint-select">Point de contrôle</label>
+<select id="checkpoint-select" name="checkpoint_id">
+    {% for checkpoint in checkpoints %}
+    <option value="{{ checkpoint.id }}">{{ checkpoint.label }}</option>
+    {% endfor %}
+</select>
+{% endblock %}

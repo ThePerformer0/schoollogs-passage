@@ -1,0 +1,18 @@
+{% extends "passage/base.html" %}
+{% block title %}Mes enfants — SchoolLogs Passage{% endblock %}
+{% block content %}
+<h1>Mes enfants</h1>
+{% if students %}
+<ul>
+    {% for student in students %}
+    <li>
+        <a href="{% url 'passage:parent_student_detail' student.id %}">
+            {{ student.full_name }} — {{ student.classroom }} ({{ student.school.name }})
+        </a>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<p>Aucun élève rattaché à votre compte.</p>
+{% endif %}
+{% endblock %}
