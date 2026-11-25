@@ -1,60 +1,85 @@
 {% extends "passage/base.html" %}
-{% block title %}{{ student.full_name }} — SchoolLogs Passage{% endblock %}
+{% block title %}{{ student.full_name }} · SchoolLogs Passage{% endblock %}
 {% block content %}
-<h1>{{ student.full_name }}</h1>
-<p>Classe : {{ student.classroom }} — Établissement : {{ student.school.name }}</p>
+<a class="back-link" href="{% url 'passage:parent_dashboard' %}">&larr; Retour à mes enfants</a>
 
-<section>
-    <h2>Passages récents</h2>
-    {% if passages %}
-    <table>
-        <thead>
-            <tr>
-                <th>Date / Heure retenue</th>
-                <th>Point de contrôle</th>
-                <th>État</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for passage in passages %}
-            <tr>
-                <td>{{ passage.retained_at }}</td>
-                <td>{{ passage.checkpoint.label }}</td>
-                <td>{{ passage.get_status_display }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    {% else %}
-    <p>Aucun passage enregistré.</p>
-    {% endif %}
+<div class="page-header">
+    <div>
+        <h1>{{ student.full_name }}</h1>
+        <p class="subtitle">Classe {{ student.classroom }} · {{ student.school.name }}</p>
+    </div>
+    <span class="badge {% if student.status == 'active' %}b-ok{% else %}b-neu{% endif %}">
+        {{ student.get_status_display }}
+    </span>
+</div>
+
+<section class="section">
+    <h2 class="section-title">Passages récents</h2>
+    <div class="table-wrap">
+        {% if passages %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Heure retenue</th>
+                    <th>Point de contrôle</th>
+                    <th>État</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for passage in passages %}
+                <tr>
+                    <td class="mono">{{ passage.retained_at|date:"d/m/Y H:i" }}</td>
+                    <td>{{ passage.checkpoint.label }}</td>
+                    <td>
+                        <span class="badge {% if passage.status == 'valid' %}b-ok{% else %}b-err{% endif %}">
+                            {{ passage.get_status_display }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="empty-state">Aucun passage enregistré pour le moment.</p>
+        {% endif %}
+    </div>
 </section>
 
-<section>
-    <h2>Anomalies récentes</h2>
-    {% if anomalies %}
-    <table>
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Type</th>
-                <th>Point</th>
-                <th>État</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for anomaly in anomalies %}
-            <tr>
-                <td>{{ anomaly.date }}</td>
-                <td>{{ anomaly.get_anomaly_type_display }}</td>
-                <td>{% if anomaly.checkpoint %}{{ anomaly.checkpoint.label }}{% else %}-{% endif %}</td>
-                <td>{{ anomaly.get_status_display }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    {% else %}
-    <p>Aucune anomalie signalée.</p>
-    {% endif %}
+<section class="section">
+    <h2 class="section-title">Anomalies récentes</h2>
+    <div class="table-wrap">
+        {% if anomalies %}
+        <table class="table-wide">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Point</th>
+                    <th>État</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for anomaly in anomalies %}
+                <tr>
+                    <td class="mono">{{ anomaly.date|date:"d/m/Y" }}</td>
+                    <td>{{ anomaly.get_anomaly_type_display }}</td>
+                    <td>{% if anomaly.checkpoint %}{{ anomaly.checkpoint.label }}{% else %}Non précisé{% endif %}</td>
+                    <td>
+                        {% if anomaly.status == 'open' %}
+                            <span class="badge b-err">Ouverte</span>
+                        {% elif anomaly.status == 'auto_resolved' %}
+                            <span class="badge b-info">Résolue automatiquement</span>
+                        {% else %}
+                            <span class="badge b-ok">Traitée</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="empty-state">Aucune anomalie signalée.</p>
+        {% endif %}
+    </div>
 </section>
 {% endblock %}

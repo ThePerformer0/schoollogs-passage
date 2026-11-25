@@ -1,18 +1,32 @@
 {% extends "passage/base.html" %}
-{% block title %}Mes enfants — SchoolLogs Passage{% endblock %}
+{% block title %}Mes enfants · SchoolLogs Passage{% endblock %}
 {% block content %}
-<h1>Mes enfants</h1>
+<div class="page-header">
+    <div>
+        <h1>Mes enfants</h1>
+        <p class="subtitle">Consultez les passages et alertes de vos enfants.</p>
+    </div>
+</div>
+
 {% if students %}
-<ul>
+<ul class="list-cards">
     {% for student in students %}
     <li>
-        <a href="{% url 'passage:parent_student_detail' student.id %}">
-            {{ student.full_name }} — {{ student.classroom }} ({{ student.school.name }})
+        <a class="child-card" href="{% url 'passage:parent_student_detail' student.id %}">
+            <span>
+                <span class="child-name">{{ student.full_name }}</span>
+                <span class="child-meta">{{ student.classroom }} · {{ student.school.name }}</span>
+            </span>
+            <span class="badge {% if student.status == 'active' %}b-ok{% else %}b-neu{% endif %}">
+                {{ student.get_status_display }}
+            </span>
         </a>
     </li>
     {% endfor %}
 </ul>
 {% else %}
-<p>Aucun élève rattaché à votre compte.</p>
+<div class="card">
+    <p class="empty-state">Aucun élève n'est rattaché à votre compte.</p>
+</div>
 {% endif %}
 {% endblock %}

@@ -1,10 +1,32 @@
 {% extends "passage/base.html" %}
-{% block title %}{{ form_title }} — Responsable{% endblock %}
+{% block title %}{{ form_title }} · Responsable{% endblock %}
 {% block content %}
-<h1>{{ form_title }}</h1>
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Enregistrer</button>
-</form>
+<a class="back-link" href="{% url 'passage:manager_dashboard' %}">&larr; Retour au tableau de bord</a>
+
+<section class="card">
+    <h1>{{ form_title }}</h1>
+    {% if form.non_field_errors %}
+    <div class="alert alert-error" role="alert">{{ form.non_field_errors }}</div>
+    {% endif %}
+    <form class="form-stack" method="post">
+        {% csrf_token %}
+        {% for field in form %}
+            {% if field.field.widget.input_type == "checkbox" %}
+            <div class="field-checkbox">
+                {{ field }}
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field.errors }}
+            </div>
+            {% else %}
+            <div class="field">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}<span class="field-help">{{ field.help_text }}</span>{% endif %}
+                {{ field.errors }}
+            </div>
+            {% endif %}
+        {% endfor %}
+        <button class="btn btn-lg" type="submit">Enregistrer</button>
+    </form>
+</section>
 {% endblock %}

@@ -1,29 +1,47 @@
 {% extends "passage/base.html" %}
-{% block title %}Journal d'audit — Responsable{% endblock %}
+{% block title %}Journal d'audit · Responsable{% endblock %}
 {% block content %}
-<h1>Journal d'audit — {{ school.name }}</h1>
-<table>
-    <thead>
-        <tr>
-            <th>Date</th>
-            <th>Acteur</th>
-            <th>Action</th>
-            <th>Objet</th>
-            <th>Résultat</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for entry in audit_logs %}
-        <tr>
-            <td>{{ entry.occurred_at }}</td>
-            <td>{{ entry.actor_identifier }}</td>
-            <td>{{ entry.get_action_display }}</td>
-            <td>{{ entry.target_type }} {{ entry.target_id }}</td>
-            <td>{{ entry.get_outcome_display }}</td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="5">Aucune entrée d'audit.</td></tr>
-        {% endfor %}
-    </tbody>
-</table>
+<div class="page-header">
+    <div>
+        <h1>Journal d'audit</h1>
+        <p class="subtitle">{{ school.name }} · Événements de sécurité et d'accès.</p>
+    </div>
+</div>
+
+<div class="table-wrap">
+    {% if audit_logs %}
+    <table class="table-wide">
+        <thead>
+            <tr>
+                <th>Horodatage</th>
+                <th>Acteur</th>
+                <th>Action</th>
+                <th>Objet</th>
+                <th>Résultat</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in audit_logs %}
+            <tr>
+                <td class="mono">{{ entry.occurred_at|date:"d/m/Y H:i:s" }}</td>
+                <td>{{ entry.actor_identifier|default:"Système" }}</td>
+                <td>{{ entry.get_action_display }}</td>
+                <td class="mono">{{ entry.target_type }} {{ entry.target_id }}</td>
+                <td>
+                    {% if entry.outcome == 'success' %}
+                        <span class="badge b-ok">Succès</span>
+                    {% elif entry.outcome == 'denied' %}
+                        <span class="badge b-err">Refusé</span>
+                    {% else %}
+                        <span class="badge b-warn">Échec</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="empty-state">Aucune entrée dans le journal d'audit.</p>
+    {% endif %}
+</div>
 {% endblock %}

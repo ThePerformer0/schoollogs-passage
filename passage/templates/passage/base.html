@@ -1,32 +1,46 @@
-<!DOCTYPE html>
+{% load static %}<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block title %}SchoolLogs — Passage{% endblock %}</title>
+    <meta name="theme-color" content="#7c3aed">
+    <title>{% block title %}SchoolLogs · Passage{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'passage/css/app.css' %}">
 </head>
 <body>
-    <header>
-        <nav aria-label="Navigation principale">
-            <strong>SchoolLogs — Passage</strong>
-            {% if request.user.is_authenticated %}
-                <span>{{ request.user.display_name }} ({{ request.user.get_role_display }})</span>
-                {% if request.user.role == "manager" %}
-                    <a href="{% url 'passage:manager_dashboard' %}">Tableau de bord</a>
-                    <a href="{% url 'passage:manager_audit_list' %}">Journal d'audit</a>
-                    <a href="/admin/">Administration</a>
-                {% elif request.user.role == "parent" %}
-                    <a href="{% url 'passage:parent_dashboard' %}">Mes enfants</a>
-                {% endif %}
-                <form method="post" action="{% url 'passage:logout' %}">
-                    {% csrf_token %}
-                    <button type="submit">Déconnexion</button>
-                </form>
-            {% endif %}
-        </nav>
+    {% if request.user.is_authenticated %}
+    <header class="topbar">
+        <a class="topbar-brand" href="{% url 'passage:home' %}">
+            <span class="brand-mark" aria-hidden="true">SL</span>
+            <span class="title">SchoolLogs · Passage</span>
+        </a>
+        <div class="topbar-user">
+            <span class="role">{{ request.user.display_name }} · {{ request.user.get_role_display }}</span>
+            <form class="logout-form" method="post" action="{% url 'passage:logout' %}">
+                {% csrf_token %}
+                <button class="btn-topbar" type="submit">Déconnexion</button>
+            </form>
+        </div>
     </header>
-    <main>
+    {% if request.user.role == "manager" %}
+    <nav class="nav" aria-label="Navigation Responsable">
+        <a href="{% url 'passage:manager_dashboard' %}" {% if request.resolver_match.url_name == 'manager_dashboard' %}aria-current="page"{% endif %}>Tableau de bord</a>
+        <a href="{% url 'passage:manager_dashboard' %}#passages">Passages</a>
+        <a href="{% url 'passage:manager_dashboard' %}#anomalies">Anomalies</a>
+        <a href="{% url 'passage:manager_dashboard' %}#messages">Messages</a>
+        <a href="{% url 'passage:manager_dashboard' %}#rejets">Rejets</a>
+        <a href="{% url 'passage:manager_audit_list' %}" {% if request.resolver_match.url_name == 'manager_audit_list' %}aria-current="page"{% endif %}>Journal</a>
+        <a href="/admin/">Gestion des fiches</a>
+    </nav>
+    {% endif %}
+    {% endif %}
+
+    {% block full_width_top %}{% endblock %}
+
+    <main class="{% block main_class %}page{% endblock %}">
         {% block content %}{% endblock %}
     </main>
+
+    {% block scripts %}{% endblock %}
 </body>
 </html>

@@ -45,8 +45,8 @@ def _is_manager_or_superuser(user: User) -> bool:
 class PassageAdminSite(admin.AdminSite):
     """Custom AdminSite strictly reserved to Managers (and superusers), never Agents/Parents."""
 
-    site_header = "SchoolLogs Passage — Administration Responsable"
-    site_title = "Administration Passage"
+    site_header = "SchoolLogs Passage · Gestion des fiches"
+    site_title = "Gestion des fiches"
     index_title = "Gestion de l'établissement"
 
     def has_permission(self, request) -> bool:
