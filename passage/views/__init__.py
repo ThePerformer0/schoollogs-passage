@@ -17,6 +17,7 @@ from passage.views.badges import (
 )
 from passage.views.health import health_check
 from passage.views.manager import (
+    manager_anomaly_handle,
     manager_audit_list,
     manager_checkpoint_create,
     manager_dashboard,
@@ -36,6 +37,7 @@ __all__ = [
     "home_view",
     "login_view",
     "logout_view",
+    "manager_anomaly_handle",
     "manager_audit_list",
     "manager_badge_activation_link",
     "manager_badge_change_status",

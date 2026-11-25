@@ -10,6 +10,7 @@ from passage.views import (
     home_view,
     login_view,
     logout_view,
+    manager_anomaly_handle,
     manager_audit_list,
     manager_badge_activation_link,
     manager_badge_change_status,
@@ -84,6 +85,11 @@ urlpatterns = [
         "responsable/itineraires/nouveau/",
         manager_route_window_create,
         name="manager_route_window_create",
+    ),
+    path(
+        "responsable/anomalies/<int:anomaly_id>/traiter/",
+        manager_anomaly_handle,
+        name="manager_anomaly_handle",
     ),
     path("responsable/audit/", manager_audit_list, name="manager_audit_list"),
 ]

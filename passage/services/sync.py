@@ -5,16 +5,19 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
-from zoneinfo import ZoneInfo
 
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
-from passage.models import Anomaly, Badge, Checkpoint, ClockOffset, Passage, User
+from passage.models import Badge, Checkpoint, ClockOffset, Passage, User
 from passage.repositories.badge_repo import (
     get_badge_by_public_id,
     get_passage_by_device_event,
+)
+from passage.services.anomalies import (
+    evaluate_valid_passage,
+    record_inactive_badge_anomaly,
 )
 from passage.services.badges import (
     is_time_step_fresh,
@@ -300,18 +303,7 @@ def _process_single_event(
                     badge_public_id=parsed.public_id,
                     time_step=parsed.time_step,
                 )
-                school_tz = ZoneInfo(school.timezone)
-                local_date = clock_eval.retained_at.astimezone(school_tz).date()
-                Anomaly.objects.create(
-                    school=school,
-                    student=badge.student,
-                    checkpoint=checkpoint,
-                    passage=passage,
-                    anomaly_type=Anomaly.AnomalyType.BADGE_NON_ACTIF,
-                    date=local_date,
-                    status=Anomaly.Status.OPEN,
-                    details=f"Tentative d'utilisation d'un badge {badge.get_status_display().lower()}.",
-                )
+                record_inactive_badge_anomaly(passage=passage, badge=badge)
                 return SyncItemResult(
                     client_event_id=client_event_id,
                     status="rejected",
@@ -399,6 +391,8 @@ def _process_single_event(
                     passage_id=passage.id,
                     retained_at=passage.retained_at.isoformat(),
                 )
+
+            evaluate_valid_passage(passage, reference_time=server_time)
 
             return SyncItemResult(
                 client_event_id=client_event_id,

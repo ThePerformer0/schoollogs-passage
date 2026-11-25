@@ -2,14 +2,15 @@
 
 from __future__ import annotations
 
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
-from django.views.decorators.http import require_GET, require_http_methods
+from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
 from passage.forms import CheckpointForm, RouteWindowForm, StudentForm
 from passage.models import User
 from passage.permissions import deny_access, role_required
 from passage.repositories import school_repo
+from passage.services.anomalies import mark_anomaly_handled
 
 
 @require_GET
@@ -139,3 +140,30 @@ def manager_route_window_create(request: HttpRequest) -> HttpResponse:
         "passage/manager_form.html",
         {"form": form, "form_title": "Nouvelle fenêtre d'itinéraire"},
     )
+
+
+@require_POST
+@role_required(User.Role.MANAGER)
+def manager_anomaly_handle(request: HttpRequest, anomaly_id: int) -> HttpResponse:
+    """Mark a school anomaly as handled by the manager (ANO-05, GES-05, SEC-05)."""
+    anomaly = school_repo.get_anomaly_for_manager(request.user, anomaly_id)
+    if anomaly is None:
+        return deny_access(
+            request,
+            target_type="anomaly",
+            target_id=anomaly_id,
+            details="Tentative de traitement d'une anomalie hors établissement.",
+        )
+
+    updated = mark_anomaly_handled(anomaly, actor=request.user)
+    accept = request.headers.get("Accept", "")
+    if "application/json" in accept and "text/html" not in accept:
+        return JsonResponse(
+            {
+                "anomaly_id": updated.id,
+                "status": updated.status,
+                "handled_by": request.user.username,
+            },
+            status=200,
+        )
+    return redirect("passage:manager_dashboard")
