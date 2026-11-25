@@ -1,83 +1,68 @@
-# Décisions d'architecture et de conception (`DECISIONS.md`)
+# Décisions d'architecture et de conception
 
-Ce document recense les décisions laissées ouvertes par l'énoncé et les choix structurants du module **Passage** (SchoolLogs). Pour chaque décision : option retenue, option(s) écartée(s) et justification.
-
----
-
-## Décisions métier et produit (D1 à D10)
-
-### D1 — Support du badge et résistance à la copie
-- **Option retenue :** Badge numérique rotatif affiché sous forme de QR code renouvelé toutes les `{PAS_CODE}` secondes (30 s par défaut), signé avec un secret propre à chaque badge (inconnu du scanneur) et à usage unique par pas de temps. Aucune donnée nominative ni identifiant d'élève lisible ne figure dans le code. En démonstration, la page « Mon badge » de la PWA joue le rôle du support ; en déploiement réel (où tous les élèves n'ont pas de téléphone), le support serait une carte NFC à compteur signé sans changer la logique serveur.
-- **Options écartées :**
-  - *Code statique opaque* : un tiers qui photographie le badge peut le rejouer indéfiniment (note de sécurité à zéro).
-  - *Vérification hors ligne par clé publique sur le scanneur* : ne permet pas de détecter un rejeu du même code sur deux appareils ou à deux instants sans état serveur.
-- **Raison :** Empêche la réutilisation d'un badge photographié (scénario S3) tout en restant testable localement sans matériel NFC. *Limite assumée et documentée* : une copie présentée dans la même fenêtre avant que le vrai code ne soit scanné reste indiscernable ; la courte durée de vie et l'usage unique limitent fortement cette fenêtre.
-
-### D2 — Contrainte pour l'agent de portail hors ligne et PWA unique
-- **Option retenue :** Une **PWA unique** couvre à la fois l'écran de scan de l'agent et la page « Mon badge » (service worker + stockage persistant du navigateur). En mode hors ligne, aucun secret de badge n'est jamais envoyé ni stocké sur l'appareil de l'agent ; l'écran affiche uniquement « scan enregistré » (jamais « badge valide ») et la validation cryptographique intervient à la synchronisation serveur.
-- **Option écartée :** Embarquer les secrets des badges sur le téléphone de l'agent pour valider hors ligne, ou développer deux applications front-end séparées.
-- **Raison :** Un appareil d'agent volé ou compromis ne doit pas compromettre les secrets de tous les élèves. L'approche PWA unique simplifie le cache hors ligne, le déploiement local sans outil de build et la maintenance.
-
-### D3 — Garantie d'enregistrement unique d'un passage (idempotence)
-- **Option retenue :** Chaque scan génère sur l'appareil un identifiant d'événement unique (UUID) associé à l'identifiant d'appareil. Une contrainte d'unicité en base sur le couple `(appareil, identifiant_evenement)` garantit l'absence de doublon, et le serveur renvoie un accusé individuel par élément du lot ; le client ne purge de sa file locale que les éléments accusés.
-- **Option écartée :** Dédoublonnage approximatif par comparaison des horodatages et du badge côté serveur.
-- **Raison :** La comparaison d'heures échoue en cas d'horloge fausse, de synchronisation interrompue ou de double scan réel. L'identifiant d'événement client + contrainte BD + accusé individuel garantit mathématiquement « aucune perte, aucun doublon » (scénarios S1 et S2).
-
-### D4 — Traitement d'une horloge locale manifestement fausse
-- **Option retenue :** Conserver toujours l'heure locale brute (jamais modifiée), calculer à la synchronisation le décalage `heure_serveur - heure_appareil` pour déduire une heure corrigée, retenir cette heure corrigée si elle est plausible (au plus 2 min dans le futur et au plus `{AGE_MAX_PASSAGE}` dans le passé) sinon l'heure serveur, marquer le lot « horloge suspecte » au-delà de `{SEUIL_HORLOGE}`, et **ne jamais rejeter** un passage à cause de son heure.
-- **Option écartée :** Rejeter les passages dont l'horloge locale s'écarte trop de l'heure serveur.
-- **Raison :** Rejeter un scan ferait perdre la trace de présence d'un élève pour un simple téléphone mal réglé (scénario S5). La correction + signalement préserve à la fois l'intégrité des présences et la visibilité pour le responsable. *Limite assumée* : le décalage d'horloge est supposé constant pendant une session hors ligne.
-
-### D5 — Détection d'une absence de passage sans action utilisateur
-- **Option retenue :** Traitement planifié indépendant des requêtes web sous forme d'une commande de gestion Django exécutée en boucle toutes les `{PERIODE_PLANIFICATEUR}` secondes, après clôture de la fenêtre + `{DELAI_GRACE}`. La détection est idempotente (contrainte d'unicité en base sur `(élève, date, point, type)`), également rejouée lors des synchronisations, et toute synchronisation tardive valide résout automatiquement l'anomalie (`résolue automatiquement`) sans la supprimer.
-- **Options écartées :** Celery + Redis (complexité d'infrastructure inutile en local) ; détection déclenchée uniquement à l'ouverture de l'application (ne détecte rien si personne ne se connecte).
-- **Raison :** Répond directement au scénario S4 sans imposer de service broker tiers au correcteur tout en restant fiable en cas de reconnexion tardive.
-
-### D6 — Choix de la cinquième anomalie
-- **Option retenue :** `BADGE_NON_ACTIF` — présentation d'un badge `suspendu`, `perdu`, `révoqué` ou remplacé avec un code correctement signé.
-- **Option écartée :** « Sortie sans entrée le même jour ».
-- **Raison :** Découle directement du cycle de vie des badges : sans cette anomalie, la tentative d'utilisation d'un badge déclaré perdu ou révoqué serait silencieusement ignorée sans alerter le parent ni le responsable. « Sortie sans entrée » dépend davantage de cas particuliers d'itinéraire et porte un risque sécurité moindre.
-
-### D7 — Base de données par défaut
-- **Option retenue :** **SQLite** par défaut avec mode **WAL** (`PRAGMA journal_mode=WAL`), `PRAGMA synchronous=NORMAL`, `transaction_mode=IMMEDIATE` et délai d'attente sur verrous (`timeout=20 s`). Basculement vers **PostgreSQL** prévu par variables d'environnement (`DB_ENGINE=postgresql`).
-- **Option écartée :** PostgreSQL obligatoire dès le démarrage local.
-- **Raison :** Permet au correcteur de lancer immédiatement l'application sans installer ni configurer de serveur de base de données, tout en sécurisant les accès concurrents entre serveur web et planificateur.
-
-### D8 — Interface du responsable
-- **Option retenue :** Administration Django restreinte exclusivement au rôle **Responsable** (et cloisonnée à son établissement) pour la gestion CRUD de base, complétée par des pages dédiées sobres pour la consultation des passages, anomalies, messages sortants, synthèses et journal d'audit.
-- **Option écartée :** Développement complet d'un back-office sur mesure ou d'une SPA JavaScript dédiée.
-- **Raison :** Concentre l'effort de développement de 5 jours sur les points critiques à forte valeur (sécurité, hors ligne, détection d'anomalies, garde-fous IA) sans sacrifier la lisibilité.
-
-### D9 — Mécanisme d'authentification
-- **Option retenue :** **Sessions serveur Django** (durée maximale `{DUREE_SESSION}` = 8 h, cookie `HttpOnly` + `SameSite=Lax`, déconnexion invalidant immédiatement la session en base) combinées à la protection CSRF native.
-- **Option écartée :** Jetons JWT stockés dans `localStorage` ou cookies sans révocation serveur.
-- **Raison :** Garantit une déconnexion réellement effective côté serveur (exigence `AUT-05` / `SEC-03`), évite l'exposition des jetons en cas de XSS et s'intègre nativement avec les vues Django et la PWA sur la même origine.
-
-### D10 — Données transmises au modèle de langage pour la synthèse
-- **Option retenue :** Envoi exclusif d'**agrégats numériques déjà calculés par le code** (présents, retards au portail, sorties hors plage avec heures, absents), **sans aucun nom d'élève** ni donnée personnelle. Vérification stricte de la sortie (schéma + contrôle que chaque nombre du texte figure dans les agrégats transmis), 1 seule relance autorisée, puis bascule automatique sur un gabarit déterministe.
-- **Option écartée :** Transmission de listes nominatives ou de passages bruts au modèle de langage en lui demandant de compter.
-- **Raison :** Protège la vie privée des élèves mineurs et élimine les hallucinations numériques du modèle (prouvé par test automatisé, exigence `SYN-11`).
+Ce document présente les choix pris sur les questions laissées ouvertes par le sujet du module **Passage** (SchoolLogs), ainsi que les quelques adaptations apportées au modèle de données indicatif. Pour chaque choix : l'option retenue, l'alternative écartée et la raison.
 
 ---
 
-## Décisions techniques de socle (Lot 1 — Tâche 1)
+## Décisions principales (D1 à D10)
 
-### D11 — Front-end sans étape de compilation et bibliothèques QR locales
-- **Option retenue :** Gabarits Django + JavaScript natif (ES6+) dans la PWA unique ; bibliothèques open source de lecture et génération de QR code copiées localement dans `passage/static/` (aucun CDN).
-- **Option écartée :** Stack Node.js / Vite / React ou chargement des scripts QR depuis un CDN externe.
-- **Raison :** Zéro dépendance Node pour le correcteur et garantie de fonctionnement 100 % hors ligne au portail.
+### D1 : Comment empêcher la réutilisation d'un badge photographié ?
+- **Option retenue :** un badge numérique sous forme de QR code qui change automatiquement toutes les 30 secondes (durée configurable). Chaque badge possède une clé secrète connue uniquement du serveur et du support de l'élève. Le QR code ne contient ni le nom ni le numéro de l'élève, et chaque code généré ne peut être validé qu'une seule fois. En démonstration, la page « Mon badge » simule ce support sur un écran ; en établissement, ce même principe serveur peut fonctionner avec une carte sans contact (NFC) à code tournant pour les élèves sans téléphone.
+- **Option écartée :** un QR code fixe contenant un identifiant aléatoire, ou un code vérifiable directement hors ligne sur le poste de scan.
+- **Raison :** un QR code fixe photographié pourrait être réutilisé indéfiniment par un tiers, et une vérification purement hors ligne ne détecte pas qu'un même code a déjà été utilisé ailleurs. *Limite assumée* : si une photo est présentée dans les 30 secondes avant que le vrai badge ne soit scanné, le serveur ne peut pas distinguer les deux ; la durée courte et l'usage unique réduisent fortement ce risque.
 
-### D12 — Architecture en couches dans une application Django unique (`passage/`) et identifiants en anglais
-- **Option retenue :** Projet `config/` + une application métier unique `passage/` découpée en couches explicites (`models/`, `repositories/`, `services/`, `services/gateways/`, `views/`, `forms/`), avec identifiants de code en **anglais** (`Student`, `Checkpoint`, `Anomaly`...) et interface, documentation et commits en **français**.
-- **Options écartées :** Découpage en 6–7 micro-applications Django (risque d'imports circulaires et de migrations croisées sur un domaine fortement couplé) ; identifiants de code en français.
-- **Raison :** Séparation nette Interface / Logique métier / Accès aux données immédiatement lisible et maintenable, prête pour une extraction ultérieure si nécessaire, tout en respectant les conventions standards Python/Django.
+### D2 : Quelle contrainte cela impose à l'agent au portail, et quel support utiliser ?
+- **Option retenue :** l'appareil de scan de l'agent (qu'il s'agisse d'un téléphone, d'une tablette ou d'un poste dédié fourni par l'établissement) ne reçoit jamais les clés secrètes des badges. L'écran de scan et la page « Mon badge » sont réunis dans une seule application web installable utilisable hors ligne (PWA). Sans connexion, l'agent scanne normalement : l'écran confirme « Scan enregistré » sans jamais affirmer que le badge est valide, et le serveur vérifie les codes dès le retour du réseau.
+- **Option écartée :** copier les clés des badges sur l'appareil de scan pour valider hors ligne, ou développer deux applications distinctes (par exemple une application mobile dédiée au scan et un site séparé).
+- **Raison :** si un appareil de scan est perdu, volé ou prêté, aucun secret d'élève n'est compromis. De plus, une application web unique utilisable dans un navigateur s'adapte à n'importe quel matériel disponible dans l'établissement sans déploiement complexe.
 
-### D13 — Pas de fichiers Docker non testés dans le dépôt
-- **Option retenue :** Lancement local en quelques commandes Python/Django documentées dans le `README.md` (avec `Django 5.2 LTS`), sans inclure de `Dockerfile` ni de `docker-compose.yml`.
-- **Option écartée :** Ajouter un `Dockerfile` et un `docker-compose.yml` écrits à l'aveugle sans pouvoir les exécuter sur la machine de développement (Docker non installé).
-- **Raison :** L'énoncé autorise explicitement *« quelques commandes décrites dans le README, ou un docker compose up »*. Livrer une configuration Docker non testée risquerait de casser l'installation chez le correcteur.
+### D3 : Comment garantir qu'un passage n'est enregistré qu'une seule fois ?
+- **Option retenue :** dès qu'un badge est scanné, l'appareil génère un identifiant unique propre à cet événement et l'associe à son identifiant d'appareil. La base de données interdit l'enregistrement en double d'un même couple (appareil, événement). Lors de la synchronisation, le serveur répond individuellement pour chaque scan du lot, et l'appareil ne retire de sa file locale que les scans confirmés par le serveur.
+- **Option écartée :** tenter de détecter les doublons côté serveur en comparant simplement l'heure du scan et le badge.
+- **Raison :** une comparaison d'heures échoue si l'horloge de l'appareil est déréglée, si la connexion coupe en plein envoi ou si un élève est réellement scanné deux fois de suite. L'identifiant unique couplé à la contrainte en base garantit aucune perte et aucun doublon.
 
-### D14 — Plafond journalier par défaut du coût IA (`PLAFOND_COUT_IA_JOUR`)
-- **Option retenue :** Plafond estimé par défaut fixé à **`0.50 USD / jour`** (en complément de `PLAFOND_APPELS_IA_JOUR = 20`), modifiable par variable d'environnement.
-- **Option écartée :** Absence de plafond financier ou plafond arbitrairement élevé (ex. 10 USD/jour).
-- **Raison :** Cohérent avec un usage sur un modèle léger à palier gratuit (20 synthèses quotidiennes représentent une fraction de centime en grille tarifaire standard) tout en démontrant un garde-fou budgétaire réaliste.
+### D4 : Que faire d'un passage dont l'horloge locale est manifestement fausse ?
+- **Option retenue :** ne jamais rejeter un passage à cause de son heure. Le serveur conserve toujours l'heure brute envoyée par l'appareil. À chaque synchronisation, il compare l'heure courante de l'appareil avec la sienne pour estimer le décalage et calculer une heure corrigée. Si cette heure corrigée est cohérente (au plus 2 minutes dans le futur et au plus 7 jours dans le passé, seuil configurable), elle est retenue ; sinon, le serveur retient son heure de réception. Au-delà de 5 minutes d'écart (configurable), les passages du lot sont signalés « horloge suspecte » au responsable.
+- **Option écartée :** rejeter automatiquement les passages provenant d'un appareil mal réglé.
+- **Raison :** une mauvaise heure sur l'appareil au portail ne doit pas faire disparaître la preuve de présence d'un élève. Corriger et signaler préserve la fiabilité du suivi tout en alertant le responsable. *Limite assumée* : le décalage d'horloge est supposé constant pendant une coupure réseau.
+
+### D5 : Comment détecter une absence sans que personne n'ouvre l'application ?
+- **Option retenue :** une tâche planifiée indépendante du site web (commande Django lancée en boucle toutes les 60 secondes, fréquence configurable) vérifie les fenêtres clôturées après un délai de grâce de 10 minutes. Une contrainte d'unicité en base empêche de créer deux fois la même anomalie d'absence pour un élève, un jour et un point donnés. Si des scans hors ligne arrivent plus tard et prouvent que l'élève était bien passé dans sa fenêtre, l'anomalie passe automatiquement à l'état « résolue automatiquement » sans être effacée.
+- **Option écartée :** installer une pile distribuée (Celery + Redis) ou ne lancer la détection qu'au moment où un responsable ouvre son tableau de bord.
+- **Raison :** déclencher la détection à l'ouverture de l'application manquerait des absences si personne ne se connecte ; à l'inverse, Celery et Redis alourdiraient inutilement l'installation locale. Une commande en boucle simple et rejouable sans doublon couvre le besoin sans dépendance externe.
+
+### D6 : Quelle cinquième anomalie ajouter ?
+- **Option retenue :** `BADGE_NON_ACTIF`, déclenchée lorsqu'un badge suspendu, perdu, révoqué ou remplacé est présenté avec une signature valide.
+- **Option écartée :** « sortie sans entrée enregistrée le même jour ».
+- **Raison :** cette anomalie découle directement de la gestion du cycle de vie des badges. Si un tiers tente d'utiliser un badge déclaré perdu ou révoqué, un refus silencieux laisserait le parent et l'établissement dans l'ignorance alors qu'il s'agit d'un incident de sécurité concret.
+
+### D7 : Quelle base de données utiliser par défaut ?
+- **Option retenue :** SQLite par défaut, configuré en mode WAL (écritures et lectures simultanées) avec un délai d'attente sur les verrous de 20 secondes, afin de supporter sans blocage le serveur web et le planificateur en parallèle. Le passage à PostgreSQL reste possible par simple variable d'environnement.
+- **Option écartée :** rendre PostgreSQL obligatoire dès le démarrage local.
+- **Raison :** permet de lancer et tester le projet immédiatement sans installer de serveur de base de données externe, tout en restant compatible avec PostgreSQL.
+
+### D8 : Comment construire l'interface de gestion du responsable ?
+- **Option retenue :** s'appuyer sur l'administration intégrée de Django, strictement réservée au rôle Responsable, renommée « Gestion des fiches » et cloisonnée à son seul établissement, complétée par des pages dédiées sobres pour consulter les passages, anomalies, messages sortants, synthèses et journal d'audit.
+- **Option écartée :** développer intégralement tous les écrans de gestion (ajout, modification, rattachement) sur mesure.
+- **Raison :** évite de disperser le temps limité du projet sur des formulaires classiques afin de concentrer l'effort sur les points critiques (sécurité, fonctionnement hors ligne, détection d'anomalies et garde-fous IA).
+
+### D9 : Comment gérer l'authentification et les refus d'accès ?
+- **Option retenue :** sessions stockées côté serveur (durée maximale de 8 heures, cookie protégé contre la lecture par script) avec déconnexion par requête `POST` qui détruit immédiatement la session en base, et protection CSRF sur toutes les actions d'écriture. Toute tentative d'accès à un élève ou à un établissement hors périmètre renvoie un refus uniforme (code HTTP `403`, sans révéler si l'identifiant existe) et laisse une trace dans le journal d'audit.
+- **Option écartée :** jetons JWT conservés dans le navigateur, et distinction entre code `404` et `403` selon que l'élève existe ou non.
+- **Raison :** les sessions serveur garantissent qu'un ancien cookie ne fonctionne plus après déconnexion. Le refus uniforme en `403` empêche de deviner quels identifiants d'élèves existent dans la base.
+
+### D10 : Quelles données envoyer au modèle d'IA pour la synthèse du jour ?
+- **Option retenue :** le programme calcule tous les chiffres depuis la base de données et n'envoie au modèle d'IA que ces nombres agrégés, sans aucun nom d'élève. Définitions retenues : *présent* (au moins un passage valide au portail d'entrée ce jour-là), *retard au portail* (passage au portail d'entrée après la fin de sa fenêtre), *sortie hors plage* (passage au portail de sortie hors fenêtre, avec son heure), *absent* (attendu mais sans passage valide après clôture). Le texte renvoyé par le modèle est contrôlé : chaque nombre présent dans la phrase doit correspondre aux chiffres transmis, avec une seule relance autorisée avant bascule automatique sur un texte gabarit exact.
+- **Option écartée :** transmettre au modèle la liste des élèves ou des passages bruts pour qu'il fasse lui-même le décompte.
+- **Raison :** protège les données personnelles des élèves mineurs et rend impossible toute erreur de calcul ou invention de chiffre par le modèle d'IA.
+
+---
+
+## Adaptations du modèle de données indicatif
+
+Quatre ajustements ciblés ont été apportés au schéma proposé dans l'énoncé :
+
+- **Une table dédiée pour les établissements (`School`)** au lieu d'un simple champ texte, afin de garantir le cloisonnement strict entre établissements sans risque d'erreur de saisie.
+- **Trois types de points de contrôle** (`entry_gate` pour portail d'entrée, `exit_gate` pour portail de sortie, `bus` pour autobus) au lieu de deux (`portail`, `autobus`), pour distinguer sans ambiguïté les entrées et les sorties lors du calcul de la synthèse du jour.
+- **Des tables de sécurité et de suivi dédiées** : historique des changements d'état d'un badge (`BadgeStatusHistory`), liens d'activation stockés uniquement sous forme d'empreinte hachée (`BadgeActivationLink`), historique des décalages d'horloge (`ClockOffset`), suivi des appels et coûts IA (`ModelCallLog`) et suivi persistant des tentatives de connexion (`LoginAttempt`).
+- **Un lien badge optionnel sur les passages (`Passage.badge` nullable)** afin de pouvoir enregistrer côté serveur les scans rejetés pour badge inconnu ou code illisible avec leur motif, tout en imposant l'unicité d'usage sur les passages valides.
