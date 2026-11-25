@@ -120,9 +120,10 @@
             <thead>
                 <tr>
                     <th>Élève</th>
-                    <th>Type</th>
+                    <th>Anomalie</th>
                     <th>Date</th>
                     <th>État</th>
+                    <th class="col-actions">Action</th>
                 </tr>
             </thead>
             <tbody>
@@ -131,7 +132,14 @@
                     <td>
                         <a href="{% url 'passage:manager_student_detail' anomaly.student.id %}">{{ anomaly.student.full_name }}</a>
                     </td>
-                    <td>{{ anomaly.get_anomaly_type_display }}</td>
+                    <td>
+                        <strong>{{ anomaly.get_anomaly_type_display }}</strong>
+                        {% if anomaly.checkpoint or anomaly.details %}
+                        <span class="cell-meta">
+                            {% if anomaly.checkpoint %}{{ anomaly.checkpoint.label }}{% endif %}{% if anomaly.checkpoint and anomaly.details %} · {% endif %}{% if anomaly.details %}{{ anomaly.details }}{% endif %}
+                        </span>
+                        {% endif %}
+                    </td>
                     <td class="mono">{{ anomaly.date|date:"d/m/Y" }}</td>
                     <td>
                         {% if anomaly.status == 'open' %}
@@ -140,6 +148,29 @@
                             <span class="badge b-info">Résolue automatiquement</span>
                         {% else %}
                             <span class="badge b-ok">Traitée</span>
+                        {% endif %}
+                    </td>
+                    <td class="col-actions">
+                        {% if anomaly.status != 'handled' %}
+                        <div class="row-actions">
+                            <form method="post" action="{% url 'passage:manager_anomaly_handle' anomaly.id %}">
+                                {% csrf_token %}
+                                <button class="btn-chip btn-chip-ok" type="submit" title="Marquer cette anomalie comme traitée" aria-label="Marquer l'anomalie de {{ anomaly.student.full_name }} comme traitée">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <circle cx="12" cy="12" r="9"/>
+                                        <path d="M9 12l2 2 4-4"/>
+                                    </svg>
+                                    <span>Traiter</span>
+                                </button>
+                            </form>
+                        </div>
+                        {% else %}
+                        <span class="action-locked">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M20 6L9 17l-5-5"/>
+                            </svg>
+                            <span>{% if anomaly.handled_by %}{{ anomaly.handled_by.display_name }}{% else %}Clôturée{% endif %}</span>
+                        </span>
                         {% endif %}
                     </td>
                 </tr>

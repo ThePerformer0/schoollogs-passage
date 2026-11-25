@@ -763,6 +763,14 @@ a {
   white-space: nowrap;
 }
 
+.cell-meta {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--fs-sm);
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
 .badge-group {
   display: inline-flex;
   flex-wrap: wrap;

@@ -10,6 +10,7 @@ from passage.models import (
     Checkpoint,
     OutgoingMessage,
     Passage,
+    RouteWindow,
     Student,
     User,
 )
@@ -76,8 +77,17 @@ def list_anomalies_for_student(student: Student, *, limit: int = 50) -> QuerySet
     """Return recent anomalies for a single student (ordered newest first)."""
     return (
         Anomaly.objects.filter(student=student)
-        .select_related("checkpoint", "passage")
+        .select_related("checkpoint", "passage", "handled_by")
         .order_by("-detected_at")[:limit]
+    )
+
+
+def list_route_windows_for_student(student: Student) -> QuerySet[RouteWindow]:
+    """Return configured itinerary windows for a single student."""
+    return (
+        RouteWindow.objects.filter(student=student)
+        .select_related("checkpoint")
+        .order_by("order", "start_time")
     )
 
 
@@ -108,7 +118,7 @@ def list_anomalies_for_school(school_id: int | None, *, limit: int = 100) -> Que
         return Anomaly.objects.none()
     return (
         Anomaly.objects.filter(school_id=school_id)
-        .select_related("student", "checkpoint", "passage")
+        .select_related("student", "checkpoint", "passage", "handled_by")
         .order_by("-detected_at")[:limit]
     )
 

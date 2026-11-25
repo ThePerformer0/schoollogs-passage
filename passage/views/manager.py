@@ -51,6 +51,7 @@ def manager_student_detail(request: HttpRequest, student_id: int) -> HttpRespons
 
     context = {
         "student": student,
+        "route_windows": school_repo.list_route_windows_for_student(student),
         "passages": school_repo.list_passages_for_student(student),
         "anomalies": school_repo.list_anomalies_for_student(student),
     }
@@ -166,4 +167,6 @@ def manager_anomaly_handle(request: HttpRequest, anomaly_id: int) -> HttpRespons
             },
             status=200,
         )
+    if request.POST.get("return_to") == "student":
+        return redirect("passage:manager_student_detail", student_id=updated.student_id)
     return redirect("passage:manager_dashboard")
