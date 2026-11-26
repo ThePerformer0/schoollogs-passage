@@ -263,6 +263,17 @@ PASSAGE_AI_DAILY_COST_LIMIT_USD = _env_decimal(
     "PLAFOND_COUT_IA_JOUR", Decimal("0.50"), min_value=Decimal("0")
 )
 PASSAGE_AI_API_KEY = os.getenv("CLE_API_IA", "").strip()
+PASSAGE_AI_MODEL_NAME = (
+    os.getenv("IA_MODELE", "gemini-2.5-flash").strip() or "gemini-2.5-flash"
+)
+PASSAGE_AI_TIMEOUT_SECONDS = _env_int("IA_TIMEOUT_SECONDS", 10, min_value=1)
+PASSAGE_AI_INPUT_COST_PER_1M_USD = _env_decimal(
+    "IA_TARIF_ENTREE_1M", Decimal("0.15"), min_value=Decimal("0")
+)
+PASSAGE_AI_OUTPUT_COST_PER_1M_USD = _env_decimal(
+    "IA_TARIF_SORTIE_1M", Decimal("0.60"), min_value=Decimal("0")
+)
+PASSAGE_AI_PROMPT_VERSION = "v1"
 PASSAGE_DEMO_MODE = _env_bool("DEMO_MODE", default=False)
 
 PASSAGE_SETTINGS = {
@@ -282,6 +293,8 @@ PASSAGE_SETTINGS = {
     "ai_daily_call_limit": PASSAGE_AI_DAILY_CALL_LIMIT,
     "ai_daily_cost_limit_usd": PASSAGE_AI_DAILY_COST_LIMIT_USD,
     "ai_api_key_configured": bool(PASSAGE_AI_API_KEY),
+    "ai_model_name": PASSAGE_AI_MODEL_NAME,
+    "ai_timeout_seconds": PASSAGE_AI_TIMEOUT_SECONDS,
     "demo_mode": PASSAGE_DEMO_MODE,
 }
 

@@ -8,6 +8,7 @@ from passage.models import (
     Anomaly,
     AuditLog,
     Checkpoint,
+    DailySummary,
     OutgoingMessage,
     Passage,
     RouteWindow,
@@ -154,4 +155,28 @@ def list_audit_logs_for_school(
         AuditLog.objects.filter(school_id=school_id)
         .select_related("actor")
         .order_by("-occurred_at")[:limit]
+    )
+
+
+def list_classrooms_for_school(school_id: int | None) -> list[str]:
+    """Return distinct classrooms belonging exclusively to `school_id`."""
+    if school_id is None:
+        return []
+    return list(
+        Student.objects.filter(school_id=school_id, status=Student.Status.ACTIVE)
+        .values_list("classroom", flat=True)
+        .distinct()
+        .order_by("classroom")
+    )
+
+
+def list_daily_summaries_for_school(
+    school_id: int | None, *, limit: int = 30
+) -> QuerySet[DailySummary]:
+    if school_id is None:
+        return DailySummary.objects.none()
+    return (
+        DailySummary.objects.filter(school_id=school_id)
+        .select_related("generated_by")
+        .order_by("-created_at")[:limit]
     )

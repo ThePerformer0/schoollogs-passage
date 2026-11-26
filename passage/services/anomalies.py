@@ -21,6 +21,7 @@ from passage.models import (
     Student,
     User,
 )
+from passage.services.notifications import notify_parents_for_anomaly
 
 
 @dataclass(frozen=True)
@@ -127,7 +128,7 @@ def record_inactive_badge_anomaly(
 
     school_tz = _school_tz(passage.school)
     local_date = passage.retained_at.astimezone(school_tz).date()
-    return Anomaly.objects.create(
+    anomaly = Anomaly.objects.create(
         school=passage.school,
         student=badge.student,
         checkpoint=passage.checkpoint,
@@ -137,6 +138,8 @@ def record_inactive_badge_anomaly(
         status=Anomaly.Status.OPEN,
         details=f"Tentative d'utilisation d'un badge {badge.get_status_display().lower()}.",
     )
+    notify_parents_for_anomaly(anomaly)
+    return anomaly
 
 
 def _auto_resolve_missing_point_if_satisfied(
@@ -345,6 +348,9 @@ def evaluate_valid_passage(
     if double_scan is not None:
         created.append(double_scan)
 
+    for anomaly in created:
+        notify_parents_for_anomaly(anomaly)
+
     return created
 
 
@@ -430,7 +436,7 @@ def detect_missing_points(
 
                 try:
                     with transaction.atomic():
-                        _, created = Anomaly.objects.get_or_create(
+                        anomaly, created = Anomaly.objects.get_or_create(
                             student=student,
                             date=local_date,
                             checkpoint=checkpoint,
@@ -446,8 +452,9 @@ def detect_missing_points(
                                 )[:255],
                             },
                         )
-                    if created:
-                        missing_created += 1
+                        if created:
+                            notify_parents_for_anomaly(anomaly)
+                            missing_created += 1
                 except IntegrityError:
                     # Concurrent scheduler/web insert hit uniq_missing_point_anomaly: idempotent.
                     pass

@@ -21,6 +21,7 @@ from passage.views import (
     manager_route_window_create,
     manager_student_create,
     manager_student_detail,
+    manager_summary_view,
     my_badge_view,
     parent_dashboard,
     parent_student_detail,
@@ -91,5 +92,6 @@ urlpatterns = [
         manager_anomaly_handle,
         name="manager_anomaly_handle",
     ),
+    path("responsable/synthese/", manager_summary_view, name="manager_summary"),
     path("responsable/audit/", manager_audit_list, name="manager_audit_list"),
 ]

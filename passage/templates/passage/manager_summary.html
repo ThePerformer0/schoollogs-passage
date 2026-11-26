@@ -1,0 +1,92 @@
+{% extends "passage/base.html" %}
+{% block title %}Synthèse du jour · Responsable{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Synthèse du jour</h1>
+        <p class="subtitle">{{ school.name }} · Chiffres calculés en base, texte par modèle IA ou gabarit.</p>
+    </div>
+</div>
+
+{% if error_message %}
+<div class="alert alert-error" role="alert">{{ error_message }}</div>
+{% endif %}
+
+<section class="card">
+    <h2>Générer une synthèse</h2>
+    {% if classrooms %}
+    <form method="post" action="{% url 'passage:manager_summary' %}" class="form-stack">
+        {% csrf_token %}
+        <div class="field">
+            <label for="summary-classroom">Classe</label>
+            <select id="summary-classroom" name="classroom" class="select" required>
+                {% for cls in classrooms %}
+                <option value="{{ cls }}" {% if cls == selected_classroom %}selected{% endif %}>{{ cls }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="field">
+            <label for="summary-date">Date</label>
+            <input id="summary-date" name="date" type="date" class="input" value="{{ selected_date }}" required>
+        </div>
+        <button class="btn" type="submit">Générer la synthèse du jour</button>
+    </form>
+    {% else %}
+    <p class="empty-state">Aucune classe active dans votre établissement.</p>
+    {% endif %}
+</section>
+
+{% if current_summary %}
+<section class="card card-summary">
+    <h2>Classe {{ current_summary.classroom }} · {{ current_summary.date|date:"d/m/Y" }}</h2>
+    <p>{{ current_summary.summary_text }}</p>
+    <div class="origin badge-group">
+        {% if current_summary.origin == 'model' %}
+            <span class="badge b-info">Modèle IA</span>
+        {% else %}
+            <span class="badge b-neu b-dash">Gabarit (mode dégradé)</span>
+        {% endif %}
+        <span class="badge b-neu">{{ current_summary.get_generation_path_display }}</span>
+    </div>
+</section>
+{% endif %}
+
+<section class="section">
+    <h2 class="section-title">Historique des synthèses</h2>
+    <div class="table-wrap">
+        {% if recent_summaries %}
+        <table class="table-wide">
+            <thead>
+                <tr>
+                    <th>Classe</th>
+                    <th>Date</th>
+                    <th>Synthèse</th>
+                    <th>Origine</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in recent_summaries %}
+                <tr>
+                    <td>{{ item.classroom }}</td>
+                    <td class="mono">{{ item.date|date:"d/m/Y" }}</td>
+                    <td>{{ item.summary_text }}</td>
+                    <td>
+                        <span class="badge-group">
+                            {% if item.origin == 'model' %}
+                                <span class="badge b-info">Modèle IA</span>
+                            {% else %}
+                                <span class="badge b-neu b-dash">Gabarit (mode dégradé)</span>
+                            {% endif %}
+                            <span class="badge b-neu">{{ item.get_generation_path_display }}</span>
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="empty-state">Aucune synthèse générée pour le moment.</p>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}
