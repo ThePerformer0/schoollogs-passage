@@ -1,5 +1,7 @@
-{% load static %}<!DOCTYPE html>
+{% load static %}
+<!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,33 +11,60 @@
     <link rel="icon" href="{% static 'passage/icons/icon.svg' %}" type="image/svg+xml">
     <link rel="stylesheet" href="{% static 'passage/css/app.css' %}">
 </head>
+
 <body>
     {% if request.user.is_authenticated %}
-    <header class="topbar">
-        <a class="topbar-brand" href="{% url 'passage:home' %}">
-            <span class="brand-mark" aria-hidden="true">SL</span>
-            <span class="title">SchoolLogs · Passage</span>
-        </a>
-        <div class="topbar-user">
-            <span class="role">{{ request.user.display_name }} · {{ request.user.get_role_display }}</span>
-            <form class="logout-form" method="post" action="{% url 'passage:logout' %}">
-                {% csrf_token %}
-                <button class="btn-topbar" type="submit">Déconnexion</button>
-            </form>
+    <div class="site-header">
+        <header class="topbar">
+            <a class="topbar-brand" href="{% url 'passage:home' %}">
+                <span class="brand-mark" aria-hidden="true">SL</span>
+                <span class="title">SchoolLogs · Passage</span>
+            </a>
+            <div class="topbar-user">
+                <span class="role">{{ request.user.display_name }} · {{ request.user.get_role_display }}</span>
+                <form class="logout-form" method="post" action="{% url 'passage:logout' %}">
+                    {% csrf_token %}
+                    <button class="btn-topbar" type="submit">Déconnexion</button>
+                </form>
+            </div>
+        </header>
+        {% if request.user.role == "manager" %}
+        <div class="nav-shell">
+            <div class="nav-mobile-bar">
+                <span class="nav-mobile-title">Navigation Responsable</span>
+                <button
+                    type="button"
+                    id="manager-nav-toggle"
+                    class="nav-toggle"
+                    aria-expanded="false"
+                    aria-controls="manager-nav-links"
+                >
+                    <svg class="icon-burger" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                        <line x1="4" y1="6" x2="20" y2="6"/>
+                        <line x1="4" y1="12" x2="20" y2="12"/>
+                        <line x1="4" y1="18" x2="20" y2="18"/>
+                    </svg>
+                    <svg class="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                    </svg>
+                    <span id="manager-nav-toggle-label">Menu</span>
+                </button>
+            </div>
+            <nav id="manager-nav-links" class="nav" aria-label="Navigation Responsable">
+                <a href="{% url 'passage:manager_dashboard' %}" {% if request.resolver_match.url_name == 'manager_dashboard' %}aria-current="page"{% endif %}>Tableau de bord</a>
+                <a href="{% url 'passage:manager_badge_list' %}" {% if request.resolver_match.url_name == 'manager_badge_list' %}aria-current="page"{% endif %}>Badges</a>
+                <a href="{% url 'passage:manager_dashboard' %}#passages">Passages</a>
+                <a href="{% url 'passage:manager_dashboard' %}#anomalies">Anomalies</a>
+                <a href="{% url 'passage:manager_dashboard' %}#messages">Messages</a>
+                <a href="{% url 'passage:manager_dashboard' %}#rejets">Rejets</a>
+                <a href="{% url 'passage:manager_summary' %}" {% if request.resolver_match.url_name == 'manager_summary' %}aria-current="page"{% endif %}>Synthèse</a>
+                <a href="{% url 'passage:manager_audit_list' %}" {% if request.resolver_match.url_name == 'manager_audit_list' %}aria-current="page"{% endif %}>Journal</a>
+                <a href="/admin/">Gestion des fiches</a>
+            </nav>
         </div>
-    </header>
-    {% if request.user.role == "manager" %}
-    <nav class="nav" aria-label="Navigation Responsable">
-        <a href="{% url 'passage:manager_dashboard' %}" {% if request.resolver_match.url_name == 'manager_dashboard' %}aria-current="page"{% endif %}>Tableau de bord</a>
-        <a href="{% url 'passage:manager_badge_list' %}" {% if request.resolver_match.url_name == 'manager_badge_list' %}aria-current="page"{% endif %}>Badges</a>
-        <a href="{% url 'passage:manager_dashboard' %}#passages">Passages</a>
-        <a href="{% url 'passage:manager_dashboard' %}#anomalies">Anomalies</a>
-        <a href="{% url 'passage:manager_dashboard' %}#messages">Messages</a>
-        <a href="{% url 'passage:manager_dashboard' %}#rejets">Rejets</a>
-        <a href="{% url 'passage:manager_audit_list' %}" {% if request.resolver_match.url_name == 'manager_audit_list' %}aria-current="page"{% endif %}>Journal</a>
-        <a href="/admin/">Gestion des fiches</a>
-    </nav>
-    {% endif %}
+        {% endif %}
+    </div>
     {% endif %}
 
     {% block full_width_top %}{% endblock %}
@@ -45,6 +74,11 @@
     </main>
 
     <script src="{% static 'passage/js/pwa_register.js' %}" defer></script>
+    {% if request.user.is_authenticated and request.user.role == "manager" %}
+    <script src="{% static 'passage/js/nav_menu.js' %}" defer></script>
+    {% endif %}
+    <script src="{% static 'passage/js/table_pager.js' %}" defer></script>
     {% block scripts %}{% endblock %}
 </body>
+
 </html>

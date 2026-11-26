@@ -12,7 +12,7 @@
     <h2 class="section-title">Émettre ou réémettre un badge</h2>
     <div class="table-wrap">
         {% if students %}
-        <table>
+        <table data-page-size="8" data-search="Rechercher un élève..." data-filters="classroom:Toutes les classes">
             <thead>
                 <tr>
                     <th>Élève</th>
@@ -22,7 +22,7 @@
             </thead>
             <tbody>
                 {% for student in students %}
-                <tr>
+                <tr data-f-classroom="{{ student.classroom }}">
                     <td>{{ student.full_name }}</td>
                     <td>{{ student.classroom }}</td>
                     <td class="col-actions">
@@ -84,7 +84,7 @@
     </div>
     <div class="table-wrap">
         {% if badges %}
-        <table class="table-wide">
+        <table class="table-wide" data-page-size="10" data-search="Rechercher un élève ou identifiant..." data-filters="state:Tous les états|support:Tous les supports">
             <thead>
                 <tr>
                     <th>Élève</th>
@@ -96,7 +96,7 @@
             </thead>
             <tbody>
                 {% for badge in badges %}
-                <tr>
+                <tr data-f-state="{{ badge.get_status_display }}" data-f-support="{% if badge.is_device_activated %}Activé{% else %}Non activé{% endif %}">
                     <td>{{ badge.student.full_name }}</td>
                     <td class="mono">{{ badge.public_id }}</td>
                     <td>

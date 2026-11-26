@@ -34,10 +34,10 @@
 </div>
 
 <section class="section" id="eleves">
-    <h2 class="section-title">Élèves</h2>
+    <h2 class="section-title">Élèves ({{ students|length }})</h2>
     <div class="table-wrap">
         {% if students %}
-        <table>
+        <table data-page-size="8" data-search="Rechercher un élève..." data-filters="classroom:Toutes les classes">
             <thead>
                 <tr>
                     <th>Élève</th>
@@ -47,7 +47,7 @@
             </thead>
             <tbody>
                 {% for student in students %}
-                <tr>
+                <tr data-f-classroom="{{ student.classroom }}">
                     <td>
                         <a href="{% url 'passage:manager_student_detail' student.id %}">{{ student.full_name }}</a>
                     </td>
@@ -68,10 +68,10 @@
 </section>
 
 <section class="section" id="passages">
-    <h2 class="section-title">Passages récents</h2>
+    <h2 class="section-title">Passages récents ({{ passages|length }})</h2>
     <div class="table-wrap">
         {% if passages %}
-        <table class="table-wide">
+        <table class="table-wide" data-page-size="8" data-search="Rechercher un élève ou un point..." data-filters="state:Tous les états" data-date-filter="date">
             <thead>
                 <tr>
                     <th>Élève</th>
@@ -82,7 +82,7 @@
             </thead>
             <tbody>
                 {% for passage in passages %}
-                <tr>
+                <tr data-f-state="{{ passage.get_status_display }}{% if passage.clock_suspect %}|Horloge suspecte{% endif %}" data-f-date="{{ passage.retained_at|date:'Y-m-d' }}">
                     <td>
                         {% if passage.student %}
                             <a href="{% url 'passage:manager_student_detail' passage.student.id %}">{{ passage.student.full_name }}</a>
@@ -113,10 +113,10 @@
 </section>
 
 <section class="section" id="anomalies">
-    <h2 class="section-title">Anomalies</h2>
+    <h2 class="section-title">Anomalies ({{ anomalies|length }})</h2>
     <div class="table-wrap">
         {% if anomalies %}
-        <table class="table-wide">
+        <table class="table-wide" data-page-size="8" data-search="Rechercher un élève ou un détail..." data-filters="type:Tous les types|state:Tous les états">
             <thead>
                 <tr>
                     <th>Élève</th>
@@ -128,7 +128,7 @@
             </thead>
             <tbody>
                 {% for anomaly in anomalies %}
-                <tr>
+                <tr data-f-type="{{ anomaly.get_anomaly_type_display }}" data-f-state="{{ anomaly.get_status_display }}">
                     <td>
                         <a href="{% url 'passage:manager_student_detail' anomaly.student.id %}">{{ anomaly.student.full_name }}</a>
                     </td>
@@ -184,10 +184,10 @@
 </section>
 
 <section class="section" id="messages">
-    <h2 class="section-title">Messages sortants</h2>
+    <h2 class="section-title">Messages sortants ({{ outgoing_messages|length }})</h2>
     <div class="table-wrap">
         {% if outgoing_messages %}
-        <table class="table-wide">
+        <table class="table-wide" data-page-size="8" data-search="Rechercher un parent ou un message..." data-filters="state:Tous les états">
             <thead>
                 <tr>
                     <th>Parent</th>
@@ -198,7 +198,7 @@
             </thead>
             <tbody>
                 {% for message in outgoing_messages %}
-                <tr>
+                <tr data-f-state="{{ message.get_status_display }}">
                     <td>{{ message.parent.display_name }}</td>
                     <td>{{ message.body }}</td>
                     <td>
@@ -222,10 +222,10 @@
 </section>
 
 <section class="section" id="rejets">
-    <h2 class="section-title">Scans rejetés</h2>
+    <h2 class="section-title">Scans rejetés ({{ rejected_passages|length }})</h2>
     <div class="table-wrap">
         {% if rejected_passages %}
-        <table>
+        <table data-page-size="8" data-search="Rechercher un point ou un motif..." data-filters="reason:Tous les motifs">
             <thead>
                 <tr>
                     <th>Heure réception</th>
@@ -235,7 +235,7 @@
             </thead>
             <tbody>
                 {% for rejected in rejected_passages %}
-                <tr>
+                <tr data-f-reason="{{ rejected.get_rejection_reason_display }}">
                     <td class="mono">{{ rejected.server_received_at|date:"d/m/Y H:i" }}</td>
                     <td>{{ rejected.checkpoint.label }}</td>
                     <td><span class="badge b-err">{{ rejected.get_rejection_reason_display }}</span></td>

@@ -51,7 +51,8 @@ SYSTEM_INSTRUCTION = (
     "doit provenir exactement des chiffres transmis. "
     "3) Mentionne tous les indicateurs non nuls et toutes les heures de sortie hors plage transmises "
     "au format exact « HH h MM ». "
-    "4) Ne cite aucun nom d'élève ni identifiant."
+    "4) Ne cite aucun nom d'élève ni identifiant. "
+    "5) Ne mentionne ni la date ni l'année dans la phrase (elles figurent déjà dans l'en-tête)."
 )
 
 

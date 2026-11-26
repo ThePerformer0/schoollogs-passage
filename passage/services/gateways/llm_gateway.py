@@ -86,14 +86,25 @@ class GeminiLLMGateway(LLMGateway):
                 "et utilise uniquement les nombres fournis ci-dessus."
             )
 
+        generation_config: dict[str, Any] = {
+            "responseMimeType": "application/json",
+            "responseSchema": {
+                "type": "OBJECT",
+                "properties": {
+                    "summary": {"type": "STRING"},
+                },
+                "required": ["summary"],
+            },
+            "temperature": 0.2,
+            "maxOutputTokens": 1024,
+        }
+        if "2.5" in self.model_name:
+            generation_config["thinkingConfig"] = {"thinkingBudget": 0}
+
         body = {
             "system_instruction": {"parts": [{"text": system_instruction}]},
             "contents": [{"role": "user", "parts": [{"text": "\n".join(user_parts)}]}],
-            "generationConfig": {
-                "responseMimeType": "application/json",
-                "temperature": 0.1,
-                "maxOutputTokens": 256,
-            },
+            "generationConfig": generation_config,
         }
 
         req = urllib_request.Request(
@@ -125,8 +136,15 @@ class GeminiLLMGateway(LLMGateway):
         try:
             parsed = json.loads(raw_body)
             candidates = parsed.get("candidates") or []
-            parts = candidates[0]["content"]["parts"]
-            raw_text = "".join(str(part.get("text", "")) for part in parts).strip()
+            content = candidates[0].get("content") or {}
+            parts = content.get("parts") or []
+            raw_text = "".join(
+                str(part.get("text", ""))
+                for part in parts
+                if isinstance(part, dict) and not part.get("thought")
+            ).strip()
+            if not raw_text:
+                raise KeyError("empty_parts")
             usage = parsed.get("usageMetadata") or {}
             input_tokens = max(0, int(usage.get("promptTokenCount") or 0))
             output_tokens = max(0, int(usage.get("candidatesTokenCount") or 0))

@@ -8,7 +8,7 @@ from django.http import HttpRequest, HttpResponse
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET
 
-PWA_CACHE_VERSION = "passage-pwa-v2"
+PWA_CACHE_VERSION = "passage-pwa-v7"
 
 SERVICE_WORKER_JS = f"""/* Service Worker unique pour SchoolLogs Passage (scan hors ligne + Mon badge). */
 const CACHE_NAME = "{PWA_CACHE_VERSION}";
@@ -19,6 +19,8 @@ const STATIC_ASSETS = [
   "/static/passage/vendor/jsQR.js",
   "/static/passage/vendor/qrcode.js",
   "/static/passage/js/pwa_register.js",
+  "/static/passage/js/nav_menu.js",
+  "/static/passage/js/table_pager.js",
   "/static/passage/js/badge_crypto.js",
   "/static/passage/js/badge_activate.js",
   "/static/passage/js/my_badge.js",

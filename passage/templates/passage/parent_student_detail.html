@@ -17,7 +17,7 @@
     <h2 class="section-title">Passages récents</h2>
     <div class="table-wrap">
         {% if passages %}
-        <table>
+        <table data-page-size="8">
             <thead>
                 <tr>
                     <th>Heure retenue</th>
@@ -49,7 +49,7 @@
     <h2 class="section-title">Anomalies récentes</h2>
     <div class="table-wrap">
         {% if anomalies %}
-        <table class="table-wide">
+        <table class="table-wide" data-page-size="8">
             <thead>
                 <tr>
                     <th>Date</th>

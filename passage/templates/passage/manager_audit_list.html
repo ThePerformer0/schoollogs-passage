@@ -10,7 +10,7 @@
 
 <div class="table-wrap">
     {% if audit_logs %}
-    <table class="table-wide">
+    <table class="table-wide" data-page-size="15" data-search="Rechercher un acteur ou une action..." data-filters="action:Toutes les actions|outcome:Tous les résultats">
         <thead>
             <tr>
                 <th>Horodatage</th>
@@ -22,7 +22,7 @@
         </thead>
         <tbody>
             {% for entry in audit_logs %}
-            <tr>
+            <tr data-f-action="{{ entry.get_action_display }}" data-f-outcome="{{ entry.get_outcome_display }}">
                 <td class="mono">{{ entry.occurred_at|date:"d/m/Y H:i:s" }}</td>
                 <td>{{ entry.actor_identifier|default:"Système" }}</td>
                 <td>{{ entry.get_action_display }}</td>

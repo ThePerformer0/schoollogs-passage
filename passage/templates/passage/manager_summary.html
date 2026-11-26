@@ -4,7 +4,7 @@
 <div class="page-header">
     <div>
         <h1>Synthèse du jour</h1>
-        <p class="subtitle">{{ school.name }} · Chiffres calculés en base, texte par modèle IA ou gabarit.</p>
+        <p class="subtitle">{{ school.name }} · Chiffres calculés en base pour chaque classe et chaque journée.</p>
     </div>
 </div>
 
@@ -13,9 +13,9 @@
 {% endif %}
 
 <section class="card">
-    <h2>Générer une synthèse</h2>
+    <h2>Paramètres de la synthèse</h2>
     {% if classrooms %}
-    <form method="post" action="{% url 'passage:manager_summary' %}" class="form-stack">
+    <form method="post" action="{% url 'passage:manager_summary' %}" class="summary-form-grid">
         {% csrf_token %}
         <div class="field">
             <label for="summary-classroom">Classe</label>
@@ -29,25 +29,81 @@
             <label for="summary-date">Date</label>
             <input id="summary-date" name="date" type="date" class="input" value="{{ selected_date }}" required>
         </div>
-        <button class="btn" type="submit">Générer la synthèse du jour</button>
+        <div class="summary-form-submit">
+            <button class="btn btn-lg" type="submit">Générer la synthèse</button>
+        </div>
     </form>
     {% else %}
     <p class="empty-state">Aucune classe active dans votre établissement.</p>
     {% endif %}
+
+    <div class="quota-strip">
+        <span>
+            {% if ai_key_configured %}
+                Assistant IA activé
+            {% else %}
+                Mode local (assistant IA non activé)
+            {% endif %}
+        </span>
+        <span class="mono">Utilisations du jour : {{ ai_calls_today }} / {{ ai_call_limit }}</span>
+        <span class="mono">Coût estimé : {{ ai_cost_today|floatformat:4 }} / {{ ai_cost_limit|floatformat:2 }} USD</span>
+    </div>
 </section>
 
 {% if current_summary %}
 <section class="card card-summary">
-    <h2>Classe {{ current_summary.classroom }} · {{ current_summary.date|date:"d/m/Y" }}</h2>
-    <p>{{ current_summary.summary_text }}</p>
+    <div class="section-head">
+        <h2>Classe {{ current_summary.classroom }} · {{ current_summary.date|date:"d/m/Y" }}</h2>
+        <span class="subtitle mono">Générée le {{ current_summary.created_at|date:"d/m/Y H:i" }}</span>
+    </div>
+    <p class="summary-lead">{{ current_summary.summary_text }}</p>
     <div class="origin badge-group">
         {% if current_summary.origin == 'model' %}
             <span class="badge b-info">Modèle IA</span>
         {% else %}
             <span class="badge b-neu b-dash">Gabarit (mode dégradé)</span>
         {% endif %}
-        <span class="badge b-neu">{{ current_summary.get_generation_path_display }}</span>
+        <span class="origin-note">
+            {% if current_summary.generation_path == 'modele' %}
+                Chiffres vérifiés
+            {% elif current_summary.generation_path == 'modele_apres_relance' %}
+                Vérifié et corrigé automatiquement
+            {% elif current_summary.generation_path == 'cache' %}
+                Résultat déjà calculé (aucun nouvel appel)
+            {% elif current_summary.generation_path == 'gabarit_sans_cle' %}
+                Assistant IA non activé
+            {% elif current_summary.generation_path == 'gabarit_service_indisponible' %}
+                Service IA temporairement indisponible
+            {% elif current_summary.generation_path == 'gabarit_plafond_atteint' %}
+                Quota IA du jour atteint
+            {% else %}
+                Repli automatique après contrôle des chiffres
+            {% endif %}
+        </span>
     </div>
+
+    {% with m=current_summary.computed_metrics %}
+    <div class="summary-metrics">
+        <div class="summary-metric">
+            <span class="summary-metric-value">{{ m.present_count }} / {{ m.total_students }}</span>
+            <span class="summary-metric-label">Présents</span>
+        </div>
+        <div class="summary-metric">
+            <span class="summary-metric-value">{{ m.absent_count }}</span>
+            <span class="summary-metric-label">Absents</span>
+        </div>
+        <div class="summary-metric">
+            <span class="summary-metric-value">{{ m.late_entry_count }}</span>
+            <span class="summary-metric-label">Retards au portail</span>
+        </div>
+        <div class="summary-metric">
+            <span class="summary-metric-value">{{ m.off_window_exit_count }}</span>
+            <span class="summary-metric-label">
+                Sorties hors plage{% if m.off_window_exit_times %} ({{ m.off_window_exit_times|join:", " }}){% endif %}
+            </span>
+        </div>
+    </div>
+    {% endwith %}
 </section>
 {% endif %}
 
@@ -55,7 +111,7 @@
     <h2 class="section-title">Historique des synthèses</h2>
     <div class="table-wrap">
         {% if recent_summaries %}
-        <table class="table-wide">
+        <table class="table-wide" data-page-size="8" data-search="Rechercher dans les synthèses..." data-filters="classroom:Toutes les classes">
             <thead>
                 <tr>
                     <th>Classe</th>
@@ -66,18 +122,32 @@
             </thead>
             <tbody>
                 {% for item in recent_summaries %}
-                <tr>
+                <tr data-f-classroom="{{ item.classroom }}">
                     <td>{{ item.classroom }}</td>
                     <td class="mono">{{ item.date|date:"d/m/Y" }}</td>
                     <td>{{ item.summary_text }}</td>
                     <td>
-                        <span class="badge-group">
-                            {% if item.origin == 'model' %}
-                                <span class="badge b-info">Modèle IA</span>
+                        {% if item.origin == 'model' %}
+                            <span class="badge b-info">Modèle IA</span>
+                        {% else %}
+                            <span class="badge b-neu b-dash">Gabarit (mode dégradé)</span>
+                        {% endif %}
+                        <span class="cell-meta">
+                            {% if item.generation_path == 'modele' %}
+                                Chiffres vérifiés
+                            {% elif item.generation_path == 'modele_apres_relance' %}
+                                Vérifié et corrigé automatiquement
+                            {% elif item.generation_path == 'cache' %}
+                                Résultat déjà calculé
+                            {% elif item.generation_path == 'gabarit_sans_cle' %}
+                                Assistant IA non activé
+                            {% elif item.generation_path == 'gabarit_service_indisponible' %}
+                                Service IA indisponible
+                            {% elif item.generation_path == 'gabarit_plafond_atteint' %}
+                                Quota IA du jour atteint
                             {% else %}
-                                <span class="badge b-neu b-dash">Gabarit (mode dégradé)</span>
+                                Repli après contrôle des chiffres
                             {% endif %}
-                            <span class="badge b-neu">{{ item.get_generation_path_display }}</span>
                         </span>
                     </td>
                 </tr>
