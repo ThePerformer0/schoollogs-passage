@@ -6,9 +6,15 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#7c3aed">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Passage">
     <title>{% block title %}SchoolLogs · Passage{% endblock %}</title>
     <link rel="manifest" href="/manifest.webmanifest">
     <link rel="icon" href="{% static 'passage/icons/icon.svg' %}" type="image/svg+xml">
+    <link rel="icon" sizes="192x192" href="{% static 'passage/icons/icon-192.png' %}" type="image/png">
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'passage/icons/icon-180.png' %}">
     <link rel="stylesheet" href="{% static 'passage/css/app.css' %}">
 </head>
 
@@ -32,35 +38,57 @@
         <div class="nav-shell">
             <div class="nav-mobile-bar">
                 <span class="nav-mobile-title">Navigation Responsable</span>
-                <button
-                    type="button"
-                    id="manager-nav-toggle"
-                    class="nav-toggle"
-                    aria-expanded="false"
-                    aria-controls="manager-nav-links"
-                >
-                    <svg class="icon-burger" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-                        <line x1="4" y1="6" x2="20" y2="6"/>
-                        <line x1="4" y1="12" x2="20" y2="12"/>
-                        <line x1="4" y1="18" x2="20" y2="18"/>
+                <button type="button" id="manager-nav-toggle" class="nav-toggle" aria-expanded="false"
+                    aria-controls="manager-nav-links">
+                    <svg class="icon-burger" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" aria-hidden="true">
+                        <line x1="4" y1="6" x2="20" y2="6" />
+                        <line x1="4" y1="12" x2="20" y2="12" />
+                        <line x1="4" y1="18" x2="20" y2="18" />
                     </svg>
-                    <svg class="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-                        <line x1="6" y1="6" x2="18" y2="18"/>
-                        <line x1="18" y1="6" x2="6" y2="18"/>
+                    <svg class="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" aria-hidden="true">
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                        <line x1="18" y1="6" x2="6" y2="18" />
                     </svg>
                     <span id="manager-nav-toggle-label">Menu</span>
                 </button>
             </div>
             <nav id="manager-nav-links" class="nav" aria-label="Navigation Responsable">
-                <a href="{% url 'passage:manager_dashboard' %}" {% if request.resolver_match.url_name == 'manager_dashboard' %}aria-current="page"{% endif %}>Tableau de bord</a>
-                <a href="{% url 'passage:manager_badge_list' %}" {% if request.resolver_match.url_name == 'manager_badge_list' %}aria-current="page"{% endif %}>Badges</a>
+                {% with nav=request.resolver_match.url_name %}
+                {% if nav == 'manager_dashboard' %}
+                <a href="{% url 'passage:manager_dashboard' %}" aria-current="page">Tableau de bord</a>
+                {% else %}
+                <a href="{% url 'passage:manager_dashboard' %}">Tableau de bord</a>
+                {% endif %}
+                {% if nav == 'manager_badge_list' %}
+                <a href="{% url 'passage:manager_badge_list' %}" aria-current="page">Badges</a>
+                {% else %}
+                <a href="{% url 'passage:manager_badge_list' %}">Badges</a>
+                {% endif %}
                 <a href="{% url 'passage:manager_dashboard' %}#passages">Passages</a>
                 <a href="{% url 'passage:manager_dashboard' %}#anomalies">Anomalies</a>
                 <a href="{% url 'passage:manager_dashboard' %}#messages">Messages</a>
                 <a href="{% url 'passage:manager_dashboard' %}#rejets">Rejets</a>
-                <a href="{% url 'passage:manager_summary' %}" {% if request.resolver_match.url_name == 'manager_summary' %}aria-current="page"{% endif %}>Synthèse</a>
-                <a href="{% url 'passage:manager_audit_list' %}" {% if request.resolver_match.url_name == 'manager_audit_list' %}aria-current="page"{% endif %}>Journal</a>
+                {% if nav == 'manager_summary' %}
+                <a href="{% url 'passage:manager_summary' %}" aria-current="page">Synthèse</a>
+                {% else %}
+                <a href="{% url 'passage:manager_summary' %}">Synthèse</a>
+                {% endif %}
+                {% if PASSAGE_DEMO_MODE %}
+                {% if nav == 'manager_demo_bench' %}
+                <a href="{% url 'passage:manager_demo_bench' %}" aria-current="page">Banc démo</a>
+                {% else %}
+                <a href="{% url 'passage:manager_demo_bench' %}">Banc démo</a>
+                {% endif %}
+                {% endif %}
+                {% if nav == 'manager_audit_list' %}
+                <a href="{% url 'passage:manager_audit_list' %}" aria-current="page">Journal</a>
+                {% else %}
+                <a href="{% url 'passage:manager_audit_list' %}">Journal</a>
+                {% endif %}
                 <a href="/admin/">Gestion des fiches</a>
+                {% endwith %}
             </nav>
         </div>
         {% endif %}

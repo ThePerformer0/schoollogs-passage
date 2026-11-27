@@ -23,6 +23,10 @@
         Aucun badge n'est activé sur cet appareil. Ouvrez le lien d'activation à usage unique fourni par votre établissement.
     </p>
 </section>
+
+<div style="text-align: center; margin-top: 16px;">
+    <button id="pwa-install-btn" class="btn btn-secondary" type="button" hidden>Installer l'application</button>
+</div>
 {% endblock %}
 {% block scripts %}
 <script src="{% static 'passage/vendor/qrcode.js' %}" defer></script>

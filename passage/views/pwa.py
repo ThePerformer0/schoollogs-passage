@@ -8,7 +8,7 @@ from django.http import HttpRequest, HttpResponse
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET
 
-PWA_CACHE_VERSION = "passage-pwa-v7"
+PWA_CACHE_VERSION = "passage-pwa-v9"
 
 SERVICE_WORKER_JS = f"""/* Service Worker unique pour SchoolLogs Passage (scan hors ligne + Mon badge). */
 const CACHE_NAME = "{PWA_CACHE_VERSION}";
@@ -16,11 +16,15 @@ const CACHE_NAME = "{PWA_CACHE_VERSION}";
 const STATIC_ASSETS = [
   "/static/passage/css/app.css",
   "/static/passage/icons/icon.svg",
+  "/static/passage/icons/icon-180.png",
+  "/static/passage/icons/icon-192.png",
+  "/static/passage/icons/icon-512.png",
   "/static/passage/vendor/jsQR.js",
   "/static/passage/vendor/qrcode.js",
   "/static/passage/js/pwa_register.js",
   "/static/passage/js/nav_menu.js",
   "/static/passage/js/table_pager.js",
+  "/static/passage/js/demo_bench.js",
   "/static/passage/js/badge_crypto.js",
   "/static/passage/js/badge_activate.js",
   "/static/passage/js/my_badge.js",
@@ -108,6 +112,7 @@ self.addEventListener("fetch", (event) => {{
 def pwa_manifest_view(request: HttpRequest) -> HttpResponse:
     """Serve the Web App Manifest for the unified Passage PWA."""
     manifest = {
+        "id": "/",
         "name": "SchoolLogs Passage",
         "short_name": "Passage",
         "description": "Scan hors ligne des badges et affichage Mon badge",
@@ -119,11 +124,35 @@ def pwa_manifest_view(request: HttpRequest) -> HttpResponse:
         "lang": "fr",
         "icons": [
             {
+                "src": "/static/passage/icons/icon-192.png",
+                "sizes": "192x192",
+                "type": "image/png",
+                "purpose": "any",
+            },
+            {
+                "src": "/static/passage/icons/icon-192.png",
+                "sizes": "192x192",
+                "type": "image/png",
+                "purpose": "maskable",
+            },
+            {
+                "src": "/static/passage/icons/icon-512.png",
+                "sizes": "512x512",
+                "type": "image/png",
+                "purpose": "any",
+            },
+            {
+                "src": "/static/passage/icons/icon-512.png",
+                "sizes": "512x512",
+                "type": "image/png",
+                "purpose": "maskable",
+            },
+            {
                 "src": "/static/passage/icons/icon.svg",
                 "sizes": "any",
                 "type": "image/svg+xml",
                 "purpose": "any",
-            }
+            },
         ],
     }
     return HttpResponse(
