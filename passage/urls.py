@@ -18,6 +18,8 @@ from passage.views import (
     manager_badge_list,
     manager_checkpoint_create,
     manager_dashboard,
+    manager_demo_bench_codes_api,
+    manager_demo_bench_view,
     manager_route_window_create,
     manager_student_create,
     manager_student_detail,
@@ -93,5 +95,7 @@ urlpatterns = [
         name="manager_anomaly_handle",
     ),
     path("responsable/synthese/", manager_summary_view, name="manager_summary"),
+    path("responsable/demo/", manager_demo_bench_view, name="manager_demo_bench"),
+    path("responsable/demo/codes/", manager_demo_bench_codes_api, name="manager_demo_bench_codes"),
     path("responsable/audit/", manager_audit_list, name="manager_audit_list"),
 ]

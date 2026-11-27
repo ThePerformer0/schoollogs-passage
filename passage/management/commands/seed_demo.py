@@ -99,8 +99,16 @@ class Command(BaseCommand):
     help = (
         "Peuple la base avec un jeu de données de départ reproductible et rejouable "
         "(1 responsable, 1 agent, 6 parents, 20 élèves sur 3 classes, horaires sur la semaine, "
-        "badges actifs, 5 jours ouvrés de passages, anomalies et messages sortants)."
+        "badges actifs, 5 jours ouvrés de passages, anomalies et messages sortants). "
+        "Option --demo-20 : ajoute 20 élèves supplémentaires avec badge actif pour le banc de démo."
     )
+
+    def add_arguments(self, parser) -> None:
+        parser.add_argument(
+            "--demo-20",
+            action="store_true",
+            help="Crée 20 élèves supplémentaires avec badge actif pour le banc de démonstration.",
+        )
 
     @transaction.atomic
     def handle(self, *args, **options) -> None:
@@ -128,6 +136,12 @@ class Command(BaseCommand):
             badges_by_name=badges_by_name,
             parent_by_student=parent_by_student,
         )
+        if options.get("demo_20"):
+            self._seed_extra_demo_20(
+                school=school,
+                manager=users["manager"],
+                checkpoints=checkpoints,
+            )
 
         self.stdout.write(
             self.style.SUCCESS(
@@ -583,3 +597,62 @@ class Command(BaseCommand):
             status=Passage.Status.REJECTED,
             rejection_reason=Passage.RejectionReason.INVALID_SIGNATURE,
         )
+
+    def _seed_extra_demo_20(
+        self,
+        *,
+        school: School,
+        manager: User,
+        checkpoints: dict[str, Checkpoint],
+    ) -> None:
+        """Idempotently create 20 extra demonstration students with active badges (DEM-01)."""
+        for idx in range(1, 21):
+            student, _ = Student.objects.get_or_create(
+                school=school,
+                first_name=f"Démo{idx:02d}",
+                last_name="Banc",
+                classroom="Démo 20",
+                defaults={"status": Student.Status.ACTIVE},
+            )
+            RouteWindow.objects.get_or_create(
+                student=student,
+                checkpoint=checkpoints["entry"],
+                order=1,
+                defaults={
+                    "start_time": time(7, 0),
+                    "end_time": time(7, 45),
+                    "weekdays": "1,2,3,4,5",
+                    "is_active": True,
+                },
+            )
+            RouteWindow.objects.get_or_create(
+                student=student,
+                checkpoint=checkpoints["exit"],
+                order=2,
+                defaults={
+                    "start_time": time(15, 30),
+                    "end_time": time(16, 15),
+                    "weekdays": "1,2,3,4,5",
+                    "is_active": True,
+                },
+            )
+            active_badge = Badge.objects.filter(
+                student=student,
+                status=Badge.Status.ACTIVE,
+            ).first()
+            if active_badge is None:
+                badge, created = Badge.objects.get_or_create(
+                    public_id=f"demo-bench-{idx:02d}",
+                    defaults={
+                        "student": student,
+                        "status": Badge.Status.ACTIVE,
+                    },
+                )
+                if created:
+                    BadgeStatusHistory.objects.create(
+                        badge=badge,
+                        changed_by=manager,
+                        previous_status="",
+                        new_status=Badge.Status.ACTIVE,
+                        reason="Émission initiale (banc de démonstration).",
+                    )

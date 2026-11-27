@@ -1,0 +1,59 @@
+{% extends "passage/base.html" %}
+{% load static %}
+{% block title %}Banc de démonstration · Responsable{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Banc de démonstration</h1>
+        <p class="subtitle">{{ school.name }} · {{ badge_count }} badge(s) rotatif(s) actif(s), sans nom d'élève.</p>
+    </div>
+    <span class="badge b-warn">Démonstration</span>
+</div>
+
+<div id="demo-bench-root" data-codes-url="{% url 'passage:manager_demo_bench_codes' %}">
+    <div id="demo-error-box" class="alert alert-error" role="alert" hidden></div>
+
+    {% if badge_count %}
+    <section class="card">
+        <div class="bench-toolbar">
+            <div class="badge-group">
+                <button id="demo-mode-single" class="btn" type="button">Un par un (rapide)</button>
+                <button id="demo-mode-grid" class="btn btn-secondary" type="button">Grille ({{ badge_count }})</button>
+            </div>
+            <div class="bench-timer-wrap">
+                <div class="timer" aria-hidden="true">
+                    <span id="demo-timer-bar" style="width: 100%;"></span>
+                </div>
+                <p id="demo-timer-label" class="timer-label" role="status">Chargement des codes...</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="demo-single-panel" class="badge-card">
+        <h2 id="demo-single-title" class="mono">Badge 01</h2>
+        <div id="demo-single-qr" class="qr"></div>
+        <div class="bench-nav">
+            <button id="demo-prev-btn" class="btn btn-secondary btn-lg" type="button">&larr; Précédent</button>
+            <button id="demo-next-btn" class="btn btn-lg" type="button">Badge suivant &rarr;</button>
+        </div>
+        <details class="demo-code-details">
+            <summary>Afficher le code texte</summary>
+            <p id="demo-single-code" class="mono" style="word-break: break-all;"></p>
+        </details>
+    </section>
+
+    <section id="demo-grid-panel" class="section" hidden>
+        <div id="demo-grid-container" class="bench"></div>
+    </section>
+    {% else %}
+    <section class="card">
+        <p class="empty-state">Aucun badge actif dans votre établissement. Lancez <code>python manage.py seed_demo</code> pour peupler la base.</p>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{% static 'passage/vendor/qrcode.js' %}" defer></script>
+<script src="{% static 'passage/js/badge_crypto.js' %}" defer></script>
+<script src="{% static 'passage/js/demo_bench.js' %}" defer></script>
+{% endblock %}

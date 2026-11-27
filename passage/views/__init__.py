@@ -15,6 +15,10 @@ from passage.views.badges import (
     manager_badge_list,
     my_badge_view,
 )
+from passage.views.demo import (
+    manager_demo_bench_codes_api,
+    manager_demo_bench_view,
+)
 from passage.views.health import health_check
 from passage.views.manager import (
     manager_anomaly_handle,
@@ -46,6 +50,8 @@ __all__ = [
     "manager_badge_list",
     "manager_checkpoint_create",
     "manager_dashboard",
+    "manager_demo_bench_codes_api",
+    "manager_demo_bench_view",
     "manager_route_window_create",
     "manager_student_create",
     "manager_student_detail",
