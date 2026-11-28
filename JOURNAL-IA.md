@@ -68,3 +68,37 @@ Ce journal recense, jour par jour, les outils d'IA utilisés sur ce projet, ce q
 ### Suite du 25 novembre 2026 : Détection des anomalies et planificateur autonome
 - **Antigravity (Gemini)** : service `anomalies.py` (5 types d'anomalies, résolution tardive automatique, traitement responsable), commande `run_scheduler`, branchement dans `sync.py`, bouton « Traiter » et affichage de l'itinéraire sur la fiche élève.
 - **Claude (conversation dédiée n° 1)** : écriture des 29 tests boîte noire (`passage/tests/test_lot3_blackbox.py`), passés du premier coup (130 tests au total).
+
+
+---
+
+## 26 et 27 novembre 2026 : Notifications parents, synthèse IA, ergonomie, banc démo et PWA installable
+
+### Outils utilisés
+- **Antigravity (Gemini)** : service de notifications sortantes derrière une interface fournisseur isolée (`notification_gateway.py`, `notifications.py`), service de synthèse assistée par IA (`llm_gateway.py`, `summaries.py`), vue `/responsable/synthese/`, améliorations d'ergonomie (navigation fixe, menu mobile, filtres instantanés et pagination des tableaux, disposition mobile des boutons d'action, sélecteur d'heure `type="time"`), banc de démonstration (`DEMO_MODE=0` par défaut) et finalisation de la PWA installable (icônes PNG 180/192/512, balises iOS et bouton d'installation).
+- **Claude (conversation dédiée n° 1)** : écriture des 100 tests boîte noire couvrant les notifications, le plafond journalier, les 4 garde-fous IA et la fidélité numérique (`passage/tests/test_lot4_blackbox.py`), portant la suite à **230 tests au vert**.
+- **API Gemini (`gemini-2.5-flash`)** : modèle appelé en cours d'exécution par le produit pour rédiger les synthèses quotidiennes uniquement à partir des chiffres agrégés calculés côté serveur, sans aucun nom d'élève ni donnée sensible.
+
+### Ce que j'ai fait moi-même
+- Vérification de la confidentialité côté IA (aucun numéro de parent ni nom d'élève transmis au modèle) et essais réels avec une clé Gemini active puis en mode dégradé sans clé.
+- Revue ergonomique complète sur PC et téléphone (navigation fixe, pagination, filtres, boutons mobiles, formulaire d'itinéraire, signalement immédiat d'un rejet serveur en ligne côté Agent).
+- Enrichissement du jeu de démonstration (20 élèves sur 3 classes, 6 parents, 5 jours ouvrés) et exécution de la suite complète en conditions CI (`DEBUG=0`, `DEMO_MODE=0`, sans clé API : **230/230 OK**).
+
+### Refus et corrections motivés
+
+1. **Correction de deux anomalies révélées par les tests boîte noire et l'essai réel sur Gemini 2.5**
+   - *Situation* : les tests boîte noire ont montré que Python 3.12 acceptait une date compacte sans tirets (`20261123`) ; par ailleurs, l'appel réel à `gemini-2.5-flash` a d'abord renvoyé un JSON tronqué car les jetons de réflexion interne du modèle consommaient le budget de sortie.
+   - *Correction et raison* : **corrigé**. Validation stricte `AAAA-MM-JJ` ajoutée dans `views/summaries.py`, et ajustement de `GeminiLLMGateway` (`thinkingBudget: 0`, `responseSchema` strict et filtrage des blocs de réflexion).
+
+---
+
+## 28 novembre 2026 : Production des deux vidéos (capsule de communication et démonstration technique)
+
+### Outils utilisés
+- **ElevenLabs (modèle Eleven v3)** : génération de la voix off française expressive de la capsule de communication (1 min 14 s).
+- **Antigravity (Gemini)** : création des visuels 16:9 aux couleurs SchoolLogs (écran de titre, image de fin, mise en page des captures réelles de l'application), analyse acoustique des pauses de la voix off pour générer les sous-titres synchronisés (`sous_titres.srt`), et raccourcissement local via `FFmpeg` de la démonstration technique (accélération des scans répétitifs, compression des silences et normalisation audio).
+- **Claude (conversation dédiée)** : assemblage de la capsule de communication en MP4 1080p via Python et `FFmpeg` (transitions fondues, léger mouvement, incrustation des sous-titres français, durée finale 1 min 18 s).
+- **OBS Studio** : capture d'écran commentée en direct des 7 scénarios de la démonstration technique entre PC et téléphone.
+
+### Ce que j'ai fait moi-même
+- Captures d'écran de l'application réelle, pilotage de la voix off sur ElevenLabs, vérification visuelle et auditive de la capsule montée, puis enregistrement en direct des 7 scénarios techniques sur OBS.
