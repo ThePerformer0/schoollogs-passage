@@ -84,12 +84,33 @@ class RouteWindowForm(forms.ModelForm):
     class Meta:
         model = RouteWindow
         fields = ["student", "checkpoint", "order", "start_time", "end_time", "weekdays", "is_active"]
+        widgets = {
+            "order": forms.NumberInput(attrs={"min": 1, "step": 1}),
+            "start_time": forms.TimeInput(
+                format="%H:%M",
+                attrs={"type": "time", "step": 60},
+            ),
+            "end_time": forms.TimeInput(
+                format="%H:%M",
+                attrs={"type": "time", "step": 60},
+            ),
+            "weekdays": forms.TextInput(
+                attrs={"placeholder": "1,2,3,4,5"},
+            ),
+        }
 
     def __init__(self, *args, school: School, **kwargs) -> None:
         self.school = school
         super().__init__(*args, **kwargs)
         self.fields["student"].queryset = Student.objects.filter(school=school)
         self.fields["checkpoint"].queryset = Checkpoint.objects.filter(school=school)
+        self.fields["start_time"].input_formats = ["%H:%M", "%H:%M:%S"]
+        self.fields["end_time"].input_formats = ["%H:%M", "%H:%M:%S"]
+        self.fields["start_time"].help_text = "Format 24 h (HH:MM), par ex. 07:00."
+        self.fields["end_time"].help_text = "Format 24 h (HH:MM), après l'heure de début."
+        self.fields["weekdays"].help_text = (
+            "1 = Lun, 2 = Mar, 3 = Mer, 4 = Jeu, 5 = Ven, 6 = Sam, 7 = Dim (séparés par des virgules)."
+        )
 
     def clean(self) -> dict:
         cleaned = super().clean()

@@ -1250,6 +1250,12 @@ tbody tr:last-child td {
   text-align: center;
 }
 
+.scan-result-err {
+  border-left-color: var(--err-bd);
+  background: var(--err-bg);
+  color: var(--err-t);
+}
+
 .badge-card {
   max-width: var(--w-badge);
   margin: var(--sp-5) auto;

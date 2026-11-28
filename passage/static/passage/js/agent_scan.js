@@ -83,6 +83,16 @@
     if (!feedbackBox) {
       return;
     }
+    feedbackBox.className = "scan-result";
+    feedbackBox.textContent = message;
+    feedbackBox.hidden = false;
+  }
+
+  function showRejectedFeedback(message) {
+    if (!feedbackBox) {
+      return;
+    }
+    feedbackBox.className = "scan-result scan-result-err";
     feedbackBox.textContent = message;
     feedbackBox.hidden = false;
   }
@@ -279,6 +289,8 @@
 
       // SCN-07 : ne retirer de la file que les scans explicitement accusés par le serveur.
       const acknowledgedIds = new Set();
+      let rejectedCount = 0;
+      let acceptedCount = 0;
       data.results.forEach(function (item) {
         if (
           item &&
@@ -286,6 +298,11 @@
           (item.status === "accepted" || item.status === "duplicate" || item.status === "rejected")
         ) {
           acknowledgedIds.add(item.client_event_id);
+          if (item.status === "rejected") {
+            rejectedCount += 1;
+          } else {
+            acceptedCount += 1;
+          }
         }
       });
 
@@ -295,7 +312,22 @@
       });
       saveQueue(remaining);
 
-      if (acknowledgedIds.size > 0) {
+      if (rejectedCount > 0 && acceptedCount === 0) {
+        showRejectedFeedback(
+          "Badge refusé par le serveur (" +
+            rejectedCount +
+            (rejectedCount > 1 ? " rejets" : " rejet") +
+            ")."
+        );
+      } else if (rejectedCount > 0) {
+        showRejectedFeedback(
+          "Synchronisation terminée : " +
+            acceptedCount +
+            " transmis, " +
+            rejectedCount +
+            (rejectedCount > 1 ? " refusés." : " refusé.")
+        );
+      } else if (acknowledgedIds.size > 0) {
         showNeutralFeedback(
           "Synchronisation terminée (" + acknowledgedIds.size + " scan(s) transmis)."
         );
